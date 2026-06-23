@@ -1,0 +1,5 @@
+policy,episodes,wins,losses,win_rate,average_reward,average_turns
+random_policy,50,32,18,0.64,0.3305264489291507,6.96
+max_damage_policy,50,37,13,0.74,0.6048812160351291,6.12
+type_aware_policy,50,46,4,0.92,1.1031408304033488,5.16
+ppo_policy,50,34,16,0.68,0.48362269492023996,5.94

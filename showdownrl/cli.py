@@ -10,8 +10,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-from showdownrl.config import CONFIG_FILE, DEFAULT_SITE, UserConfig, delete_config, load_config, merged_config, save_config
+from showdownrl.config import CONFIG_FILE, DEFAULT_SITE, default_stats_dir, UserConfig, delete_config, load_config, merged_config, save_config
 from showdownrl.live import LiveOptions, run_live
+from showdownrl.stats import filter_records, load_battle_records, open_html_report, parse_since, terminal_summary, write_html_report
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -42,10 +43,21 @@ def build_parser() -> argparse.ArgumentParser:
     live.add_argument("--record-dir", type=Path, help="Directory for the WebM recording.")
     live.add_argument("--keep-open", action="store_true", help="Leave the browser open after the battle loop ends.")
     live.add_argument("--max-turns", type=int, default=200, help="Maximum AI action cycles before stopping.")
+    live.add_argument("--max-battles", type=int, default=1, help="Number of battles to play before stopping.")
+    live.add_argument("--no-stats", action="store_true", help="Do not write local battle stats for this run.")
+    live.add_argument("--stats-dir", type=Path, help="Directory for local battle stats.")
+    live.add_argument("--debug-policy", action="store_true", help="Print scored candidate moves each turn.")
     live.add_argument("--slow-mo-ms", type=int, default=250, help="Browser slow-motion delay in milliseconds.")
     live.add_argument("--click-delay", type=float, default=0.75, help="Pause after visible clicks.")
     live.add_argument("--viewport-width", type=int, default=1280)
     live.add_argument("--viewport-height", type=int, default=800)
+
+    stats = subparsers.add_parser("stats", help="Show local live battle statistics.")
+    stats.add_argument("--stats-dir", type=Path, help="Directory containing local battle stats.")
+    stats.add_argument("--since", help="Only include battles on or after YYYY-MM-DD.")
+    stats.add_argument("--format", dest="format_name", default="", help="Only include formats containing this text.")
+    stats.add_argument("--html", action="store_true", help="Write a local HTML stats report.")
+    stats.add_argument("--open", action="store_true", help="Write and open the local HTML stats report.")
 
     logout = subparsers.add_parser("logout", help="Delete saved local ShowdownRL credentials.")
     logout.add_argument("--yes", action="store_true", help="Do not ask for confirmation.")
@@ -124,6 +136,10 @@ def options_from_args(args: argparse.Namespace, *, check_ui_only: bool = False) 
         login_only=getattr(args, "login_only", False),
         check_ui_only=check_ui_only,
         max_turns=getattr(args, "max_turns", 200),
+        max_battles=getattr(args, "max_battles", 1),
+        stats_enabled=not getattr(args, "no_stats", False),
+        stats_dir=getattr(args, "stats_dir", None),
+        debug_policy=getattr(args, "debug_policy", False),
         slow_mo_ms=getattr(args, "slow_mo_ms", 250),
         click_delay=getattr(args, "click_delay", 0.75),
         viewport_width=getattr(args, "viewport_width", 1280),
@@ -165,6 +181,24 @@ def live_command(args: argparse.Namespace) -> int:
     return asyncio.run(run_live(options))
 
 
+def stats_command(args: argparse.Namespace) -> int:
+    try:
+        since = parse_since(args.since)
+    except ValueError:
+        print("--since must be in YYYY-MM-DD format.")
+        return 2
+
+    records, corrupt_count = load_battle_records(args.stats_dir)
+    records = filter_records(records, since=since, format_name=args.format_name)
+    if args.html or args.open:
+        path = write_html_report(records, stats_dir=args.stats_dir, corrupt_count=corrupt_count)
+        print(f"Stats report: {path}")
+        if args.open:
+            open_html_report(path)
+    print(terminal_summary(records, corrupt_count=corrupt_count, stats_dir=args.stats_dir))
+    return 0
+
+
 def logout_command(args: argparse.Namespace) -> int:
     if CONFIG_FILE.exists() and not args.yes:
         answer = input(f"Delete saved ShowdownRL config at {CONFIG_FILE}? [y/N] ").strip().lower()
@@ -182,6 +216,7 @@ def doctor_command() -> int:
     print(f"Python: {sys.version.split()[0]}")
     print(f"Platform: {platform.platform()}")
     print(f"Config path: {CONFIG_FILE}")
+    print(f"Stats path: {default_stats_dir()}")
     print(f"Config exists: {CONFIG_FILE.exists()}")
     print(f"Configured username: {'yes' if config.username else 'no'}")
     print(f"Configured password: {'yes' if config.password else 'no'}")
@@ -208,6 +243,8 @@ def main(argv: list[str] | None = None) -> int:
         return check_command(args)
     if args.command == "live":
         return live_command(args)
+    if args.command == "stats":
+        return stats_command(args)
     if args.command == "logout":
         return logout_command(args)
     if args.command == "doctor":

@@ -32,8 +32,21 @@ def _user_videos_dir() -> Path:
         return movies if movies.exists() else Path.home()
 
 
+def _user_data_dir() -> Path:
+    try:
+        from platformdirs import user_data_dir
+
+        return Path(user_data_dir(APP_NAME, appauthor=False))
+    except Exception:
+        if os.name == "posix" and Path.home().joinpath("Library").exists():
+            return Path.home() / "Library" / "Application Support" / APP_NAME
+        return Path.home() / ".local" / "share" / "showdownrl"
+
+
 CONFIG_DIR = _user_config_dir()
 CONFIG_FILE = CONFIG_DIR / "config.env"
+DATA_DIR = _user_data_dir()
+DEFAULT_STATS_DIR = DATA_DIR / "stats"
 
 
 @dataclass
@@ -132,3 +145,7 @@ def default_record_dir(cwd: Path | None = None) -> Path:
     if (cwd / "showdownrl").is_dir() and (cwd / "README.md").exists():
         return cwd / "results"
     return _user_videos_dir() / APP_NAME
+
+
+def default_stats_dir() -> Path:
+    return DEFAULT_STATS_DIR

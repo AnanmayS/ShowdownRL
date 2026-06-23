@@ -31,7 +31,7 @@ commands.
 For the first public version, install directly from GitHub with `pipx`:
 
 ```bash
-pipx install "git+https://github.com/<owner>/ShowdownRL.git"
+pipx install "git+https://github.com/AnanmayS/ShowdownRL.git"
 ```
 
 For local development from this folder:
@@ -98,10 +98,52 @@ showdownrl live --slow-mo-ms 500 --click-delay 1.25
 
 # Limit the battle loop for a smoke test
 showdownrl live --max-turns 3
+
+# Play more than one battle in the same run
+showdownrl live --max-battles 3
+
+# Show move scores while the AI is choosing
+showdownrl live --debug-policy
+
+# Do not write local battle stats
+showdownrl live --no-stats
 ```
 
 Recordings are saved to `~/Movies/ShowdownRL/` when installed normally. If you
 run from this repository folder, recordings are saved to `results/`.
+
+## Live Stats
+
+`showdownrl live` writes local battle stats by default. Stats are stored on your
+machine only and are not uploaded by ShowdownRL.
+
+Print a terminal summary:
+
+```bash
+showdownrl stats
+```
+
+Generate a local HTML report:
+
+```bash
+showdownrl stats --html
+showdownrl stats --open
+```
+
+Filter the report:
+
+```bash
+showdownrl stats --since 2026-06-23
+showdownrl stats --format "Random Battle"
+```
+
+Stats are saved under the local app data directory, separate from the config
+file that stores credentials. You can override the location for a run:
+
+```bash
+showdownrl live --stats-dir ./my-stats
+showdownrl stats --stats-dir ./my-stats
+```
 
 ## Account and Privacy
 
@@ -123,12 +165,16 @@ You can also use environment variables for one-off overrides:
 PS_USERNAME=your_name PS_PASSWORD=your_password showdownrl live
 ```
 
+Battle logs do not store your password. They include local-only battle metadata
+such as result, turns, selected moves, forced switches, errors, and video path.
+
 ## Troubleshooting
 
 - Missing Chromium: run `showdownrl setup`.
 - Missing credentials: run `showdownrl setup` or use `showdownrl live --guest --username SomeGuestName`.
 - Login failed: run `showdownrl logout && showdownrl setup`.
 - Website controls changed: run `showdownrl doctor`, then `showdownrl check --skip-login`.
+- Stats look empty: play a full battle with `showdownrl live`, then run `showdownrl stats`.
 
 ## Developer Notes
 
@@ -144,6 +190,7 @@ python scripts/smoke_test.py
 python scripts/train_ppo.py --timesteps 2048
 python scripts/evaluate_model.py --episodes 100
 python scripts/generate_ai_stats.py
+PYTHONPATH=. python -m unittest discover -s tests
 ```
 
 Those training/evaluation workflows are not part of the v1 nontechnical user

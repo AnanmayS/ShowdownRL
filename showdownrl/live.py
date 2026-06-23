@@ -9,8 +9,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from showdownrl.ai import score_move
+from showdownrl.ai import ranked_moves
 from showdownrl.config import DEFAULT_SITE, default_record_dir
+from showdownrl.stats import append_battle_record, utc_now_iso
 
 CONNECTED = "() => document.querySelector('button[name=openSounds], .userbar') !== null"
 IN_BATTLE = "() => document.querySelector('.battle') !== null"
@@ -89,6 +90,8 @@ GET_MOVES = """
         index,
         name: (button.getAttribute('data-move') || button.textContent || '').trim(),
         type: (button.getAttribute('data-movetype') || '').trim(),
+        category: (button.getAttribute('data-category') || button.getAttribute('data-movecategory') || '').trim(),
+        power: (button.getAttribute('data-basepower') || button.getAttribute('data-power') || '').trim(),
         text: (button.textContent || '').replace(/\\s+/g, ' ').trim(),
     }));
 }
@@ -119,6 +122,10 @@ class LiveOptions:
     login_only: bool = False
     check_ui_only: bool = False
     max_turns: int = 200
+    max_battles: int = 1
+    stats_enabled: bool = True
+    stats_dir: Path | None = None
+    debug_policy: bool = False
     slow_mo_ms: int = 250
     click_delay: float = 0.75
     viewport_width: int = 1280
@@ -273,6 +280,61 @@ async def click_move(page: Any, move_index: int, label: str, click_delay: float)
     return await click_locator(page, moves.nth(move_index), label, click_delay)
 
 
+def infer_result(visible_text: str | None, username: str) -> str:
+    text = (visible_text or "").lower()
+    user = username.lower()
+    if not text:
+        return "unknown"
+    if user and f"{user} won" in text:
+        return "win"
+    if user and (f"{user} lost" in text or f"{user} forfeited" in text):
+        return "loss"
+    if "you won" in text:
+        return "win"
+    if "you lost" in text or "you forfeited" in text:
+        return "loss"
+    if "forfeited" in text and (not user or user not in text):
+        return "win"
+    if "won" in text or "lost" in text or "forfeited" in text:
+        return "unknown"
+    return "unknown"
+
+
+def new_battle_record(options: LiveOptions, battle_number: int) -> dict[str, Any]:
+    return {
+        "started_at": utc_now_iso(),
+        "ended_at": "",
+        "battle_number": battle_number,
+        "username_mode": "guest" if options.guest else "account",
+        "site_url": options.site,
+        "format": options.format_name or "current format",
+        "result": "unknown",
+        "turns": 0,
+        "selected_moves": [],
+        "forced_switches": 0,
+        "errors": [],
+        "video_path": "",
+        "visible_result_text": "",
+    }
+
+
+def finish_battle_record(record: dict[str, Any], *, visible_text: str | None, username: str) -> None:
+    record["ended_at"] = utc_now_iso()
+    record["visible_result_text"] = visible_text or ""
+    if record.get("result") not in {"error", "win", "loss"}:
+        record["result"] = infer_result(visible_text, username)
+
+
+def save_battle_records(records: list[dict[str, Any]], options: LiveOptions, video_path: Path | None) -> None:
+    if not options.stats_enabled or not records:
+        return
+    for record in records:
+        if video_path and video_path.exists():
+            record["video_path"] = str(video_path)
+        path = append_battle_record(record, options.stats_dir)
+    print(f"\nStats saved: {path}", flush=True)
+
+
 async def run_live(options: LiveOptions) -> int:
     record_dir = options.record_dir or default_record_dir()
     if options.record:
@@ -292,6 +354,8 @@ async def run_live(options: LiveOptions) -> int:
         return 2
 
     video_path: Path | None = None
+    battle_records: list[dict[str, Any]] = []
+    active_record: dict[str, Any] | None = None
     try:
         async with async_playwright() as playwright:
             browser = await playwright.chromium.launch(
@@ -348,65 +412,101 @@ async def run_live(options: LiveOptions) -> int:
                 await browser.close()
                 return 0
 
-            print("\n[3] Queueing for a battle...", flush=True)
-            await maybe_select_format(page, options.format_name, options.click_delay)
-            if not await click_queue_battle(page, options.click_delay):
-                print("  Battle button was not visible. Try `showdownrl doctor`.", flush=True)
-            print("  Waiting for an opponent...", flush=True)
+            for battle_number in range(1, max(1, options.max_battles) + 1):
+                record = new_battle_record(options, battle_number)
+                active_record = record
+                print(f"\n[3] Queueing for battle {battle_number}/{max(1, options.max_battles)}...", flush=True)
+                await maybe_select_format(page, options.format_name, options.click_delay)
+                if not await click_queue_battle(page, options.click_delay):
+                    print("  Battle button was not visible. Try `showdownrl doctor`.", flush=True)
+                    record["errors"].append("battle button was not visible")
+                print("  Waiting for an opponent...", flush=True)
 
-            if not await wait_cond(page, IN_BATTLE, 75):
-                print("  No battle yet; retrying the queue click once.", flush=True)
-                await click_queue_battle(page, options.click_delay)
-                await wait_cond(page, IN_BATTLE, 75)
+                if not await wait_cond(page, IN_BATTLE, 75):
+                    print("  No battle yet; retrying the queue click once.", flush=True)
+                    await click_queue_battle(page, options.click_delay)
+                    await wait_cond(page, IN_BATTLE, 75)
 
-            if not await page.evaluate(IN_BATTLE):
-                print("  Could not detect an active battle. Try `showdownrl doctor`.", flush=True)
-                if options.keep_open:
-                    print("  Browser left open because --keep-open was set.", flush=True)
-                    await asyncio.Event().wait()
-                await context.close()
-                await browser.close()
-                return 1
+                if not await page.evaluate(IN_BATTLE):
+                    print("  Could not detect an active battle. Try `showdownrl doctor`.", flush=True)
+                    record["result"] = "error"
+                    record["errors"].append("could not detect an active battle")
+                    finish_battle_record(record, visible_text=None, username=options.username)
+                    battle_records.append(record)
+                    active_record = None
+                    if options.keep_open:
+                        print("  Browser left open because --keep-open was set.", flush=True)
+                        await asyncio.Event().wait()
+                    await context.close()
+                    save_battle_records(battle_records, options, video_path)
+                    await browser.close()
+                    return 1
 
-            print("\n=== BATTLE STARTED ===\n", flush=True)
-            for turn in range(1, options.max_turns + 1):
-                if await click_team_preview(page, options.click_delay):
-                    print("  Team preview confirmed.", flush=True)
-                    await asyncio.sleep(2.5)
-                    continue
-
-                moves = await page.evaluate(GET_MOVES)
-                if moves:
-                    best = max(moves, key=score_move)
-                    print(
-                        f"  Turn {turn}: {best['name']} ({best['type'] or 'unknown'}) "
-                        f"from {[m['name'] for m in moves]}",
-                        flush=True,
-                    )
-                    if await click_move(page, int(best["index"]), best["name"], options.click_delay):
-                        await asyncio.sleep(3.25)
-                        continue
-
-                if await page.locator(".switchmenu button:not([disabled])").count():
-                    if await click_switch(page, options.click_delay):
-                        print("  Forced switch clicked.", flush=True)
+                print("\n=== BATTLE STARTED ===\n", flush=True)
+                visible_result: str | None = None
+                for turn in range(1, options.max_turns + 1):
+                    if await click_team_preview(page, options.click_delay):
+                        print("  Team preview confirmed.", flush=True)
                         await asyncio.sleep(2.5)
                         continue
 
-                result = await page.evaluate(VISIBLE_RESULT)
-                if result:
-                    print(f"\n  {result}", flush=True)
-                    break
+                    moves = await page.evaluate(GET_MOVES)
+                    if moves:
+                        ranked = ranked_moves(moves)
+                        best, best_score = ranked[0]
+                        if options.debug_policy:
+                            debug = ", ".join(f"{move['name']}={score:.2f}" for move, score in ranked)
+                            print(f"  Policy scores: {debug}", flush=True)
+                        print(
+                            f"  Turn {turn}: {best['name']} ({best['type'] or 'unknown'}, score {best_score:.2f}) "
+                            f"from {[m['name'] for m in moves]}",
+                            flush=True,
+                        )
+                        if await click_move(page, int(best["index"]), best["name"], options.click_delay):
+                            record["turns"] = turn
+                            record["selected_moves"].append(
+                                {
+                                    "turn": turn,
+                                    "name": best.get("name", ""),
+                                    "type": best.get("type", ""),
+                                    "score": round(best_score, 4),
+                                }
+                            )
+                            await asyncio.sleep(3.25)
+                            continue
 
-                if not await page.evaluate(IN_BATTLE):
-                    print("\n  Battle panel closed.", flush=True)
-                    break
+                    if await page.locator(".switchmenu button:not([disabled])").count():
+                        if await click_switch(page, options.click_delay):
+                            record["turns"] = turn
+                            record["forced_switches"] += 1
+                            print("  Forced switch clicked.", flush=True)
+                            await asyncio.sleep(2.5)
+                            continue
 
-                await asyncio.sleep(1)
-            else:
-                print(f"\n  Stopped after --max-turns={options.max_turns}.", flush=True)
+                    visible_result = await page.evaluate(VISIBLE_RESULT)
+                    if visible_result:
+                        print(f"\n  {visible_result}", flush=True)
+                        break
 
-            print("\n=== BATTLE LOOP ENDED ===", flush=True)
+                    if not await page.evaluate(IN_BATTLE):
+                        print("\n  Battle panel closed.", flush=True)
+                        break
+
+                    await asyncio.sleep(1)
+                else:
+                    print(f"\n  Stopped after --max-turns={options.max_turns}.", flush=True)
+                    record["errors"].append(f"stopped after max turns {options.max_turns}")
+
+                if visible_result is None:
+                    visible_result = await page.evaluate(VISIBLE_RESULT)
+                finish_battle_record(record, visible_text=visible_result, username=options.username)
+                battle_records.append(record)
+                active_record = None
+                print("\n=== BATTLE LOOP ENDED ===", flush=True)
+                if battle_number < max(1, options.max_battles):
+                    await page.goto(options.site, wait_until="domcontentloaded", timeout=45_000)
+                    await page.evaluate(CLICK_MARKER)
+                    await asyncio.sleep(2)
             await asyncio.sleep(2)
 
             if options.keep_open and not options.record:
@@ -422,6 +522,7 @@ async def run_live(options: LiveOptions) -> int:
                     if video_path.exists():
                         video_path.unlink()
                     shutil.move(str(raw_video), str(video_path))
+            save_battle_records(battle_records, options, video_path)
             if options.keep_open:
                 print("  Recording contexts must close before Playwright can save video.", flush=True)
             await browser.close()
@@ -430,6 +531,12 @@ async def run_live(options: LiveOptions) -> int:
         if "Executable doesn't exist" in message or "playwright install" in message:
             print("Chromium is missing. Run `showdownrl setup`.", flush=True)
             return 2
+        if active_record:
+            active_record["result"] = "error"
+            active_record["errors"].append(message)
+            finish_battle_record(active_record, visible_text=None, username=options.username)
+            battle_records.append(active_record)
+            save_battle_records(battle_records, options, video_path)
         print(f"ShowdownRL failed: {exc}", flush=True)
         print(f"Site: {options.site}", flush=True)
         print("Try `showdownrl doctor` for diagnostics.", flush=True)

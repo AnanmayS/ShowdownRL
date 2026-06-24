@@ -69,6 +69,7 @@ class SimplePokemonMoveEnv(gymnasium.Env):
         self.own_hp = 1.0
         self.opponent_hp = 1.0
         self.moves = None
+        self.opponent_moves = None
         self.own_types = []
         self.opponent_types = []
         self.own_attack_boost = 1.0
@@ -109,37 +110,50 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             )
         )
 
-    def _generate_moves(self):
-        """Generate four moves with base_power, accuracy, and a damage multiplier."""
+    def _generate_toy_moves(self):
         moves = []
-        if self.mechanics in {"typed", "rich"}:
-            self.own_types = self._sample_types()
-            self.opponent_types = self._sample_types()
-            move_types = list(self.rng.choice(POKEMON_TYPES, size=4, replace=True))
-            if self.rng.random() < 0.75:
-                move_types[0] = self.own_types[0]
-            for index, move_type in enumerate(move_types):
-                attack_slots_remaining = max(0, 2 - index)
-                role = self._sample_role(attack_slots_remaining)
-                bp = self.rng.uniform(0.3, 1.0)
-                acc = self.rng.uniform(0.7, 1.0)
-                effectiveness = self._type_effectiveness(move_type, self.opponent_types)
-                stab = 1.5 if move_type in self.own_types else 1.0
-                multiplier = stab * effectiveness
-                if role != ROLE_ATTACK:
-                    bp = 0.0
-                    multiplier = 0.0
-                moves.append((bp, acc, multiplier, stab, effectiveness, role))
-            return moves
-
-        self.own_types = []
-        self.opponent_types = []
         for _ in range(4):
-            bp = self.rng.uniform(0.3, 1.0)   # base_power in [0.3, 1.0]
-            acc = self.rng.uniform(0.7, 1.0)   # accuracy in [0.7, 1.0]
+            bp = self.rng.uniform(0.3, 1.0)
+            acc = self.rng.uniform(0.7, 1.0)
             multiplier = self.rng.uniform(0.5, 2.0)
             moves.append((bp, acc, multiplier))
         return moves
+
+    def _generate_typed_moves(self, attacker_types: list[str], defender_types: list[str]):
+        moves = []
+        move_types = list(self.rng.choice(POKEMON_TYPES, size=4, replace=True))
+        if self.rng.random() < 0.75:
+            move_types[0] = attacker_types[0]
+        for index, move_type in enumerate(move_types):
+            attack_slots_remaining = max(0, 2 - index)
+            role = self._sample_role(attack_slots_remaining)
+            bp = self.rng.uniform(0.3, 1.0)
+            acc = self.rng.uniform(0.7, 1.0)
+            effectiveness = self._type_effectiveness(move_type, defender_types)
+            stab = 1.5 if move_type in attacker_types else 1.0
+            multiplier = stab * effectiveness
+            if role != ROLE_ATTACK:
+                bp = 0.0
+                multiplier = 0.0
+            moves.append((bp, acc, multiplier, stab, effectiveness, role))
+        return moves
+
+    def _generate_moves(self):
+        """Generate four moves for the agent-facing observation."""
+        if self.mechanics in {"typed", "rich"}:
+            self.own_types = self._sample_types()
+            self.opponent_types = self._sample_types()
+            return self._generate_typed_moves(self.own_types, self.opponent_types)
+
+        self.own_types = []
+        self.opponent_types = []
+        return self._generate_toy_moves()
+
+    def _generate_opponent_moves(self):
+        """Generate hidden opponent moves from the opponent's attacking perspective."""
+        if self.mechanics in {"typed", "rich"}:
+            return self._generate_typed_moves(self.opponent_types, self.own_types)
+        return self._generate_toy_moves()
 
     def _get_obs(self):
         """Build the observation vector."""
@@ -201,11 +215,12 @@ class SimplePokemonMoveEnv(gymnasium.Env):
 
     def _opponent_action(self) -> int:
         policy = self.current_opponent_policy
+        opponent_moves = self.opponent_moves or self.moves
         if policy == "max_damage":
-            return int(np.argmax([self._move_values(move)[0] for move in self.moves]))
+            return int(np.argmax([self._move_values(move)[0] for move in opponent_moves]))
         if policy == "type_aware":
             scores = []
-            for move in self.moves:
+            for move in opponent_moves:
                 bp, acc, multiplier, _, _, role = self._move_values(move)
                 if role == ROLE_RECOVER:
                     scores.append(1.2 if self.opponent_hp <= 0.35 else 0.05)
@@ -235,12 +250,14 @@ class SimplePokemonMoveEnv(gymnasium.Env):
         else:
             self.current_opponent_policy = self.opponent_policy
         self.moves = self._generate_moves()
+        self.opponent_moves = self._generate_opponent_moves()
         self.turn = 0
 
         return self._get_obs(), self._get_info()
 
     def _apply_action(self, action: int, *, is_own: bool) -> None:
-        bp, acc, multiplier, _, _, role = self._move_values(self.moves[action])
+        moves = self.moves if is_own else (self.opponent_moves or self.moves)
+        bp, acc, multiplier, _, _, role = self._move_values(moves[action])
         if self.rng.random() > acc:
             return
 
@@ -280,8 +297,9 @@ class SimplePokemonMoveEnv(gymnasium.Env):
         self._apply_action(action, is_own=True)
 
         # --- Opponent attack ---
-        opp_action = self._opponent_action()
-        self._apply_action(opp_action, is_own=False)
+        if self.opponent_hp > 0:
+            opp_action = self._opponent_action()
+            self._apply_action(opp_action, is_own=False)
 
         # --- Reward ---
         opp_delta = max(0.0, prev_opp - self.opponent_hp)

@@ -33,7 +33,49 @@ class SimpleEnvTests(unittest.TestCase):
         self.assertTrue(info["own_types"])
         self.assertTrue(info["opponent_types"])
         self.assertEqual(len(env.moves), 4)
+        self.assertEqual(len(env.opponent_moves), 4)
         self.assertTrue(any(obs[2 + index * 3 + 2] != 1.0 for index in range(4)))
+
+    def test_opponent_policy_uses_hidden_opponent_moves(self) -> None:
+        env = SimplePokemonMoveEnv(opponent_policy="max_damage", seed=5)
+        env.moves = [
+            (1.0, 1.0, 1.0),
+            (0.9, 1.0, 1.0),
+            (0.8, 1.0, 1.0),
+            (0.7, 1.0, 1.0),
+        ]
+        env.opponent_moves = [
+            (0.1, 1.0, 1.0),
+            (0.2, 1.0, 1.0),
+            (0.3, 1.0, 1.0),
+            (0.4, 1.0, 1.0),
+        ]
+
+        self.assertEqual(env._opponent_action(), 3)
+
+    def test_opponent_does_not_retaliate_after_fainting(self) -> None:
+        env = SimplePokemonMoveEnv(opponent_policy="max_damage", seed=6)
+        env.reset()
+        env.own_hp = 0.2
+        env.opponent_hp = 0.1
+        env.moves = [
+            (1.0, 1.0, 1.0),
+            (0.0, 1.0, 0.0),
+            (0.0, 1.0, 0.0),
+            (0.0, 1.0, 0.0),
+        ]
+        env.opponent_moves = [
+            (1.0, 1.0, 1.0),
+            (0.0, 1.0, 0.0),
+            (0.0, 1.0, 0.0),
+            (0.0, 1.0, 0.0),
+        ]
+
+        _, _, terminated, _, info = env.step(0)
+
+        self.assertTrue(terminated)
+        self.assertEqual(info["own_hp"], 0.2)
+        self.assertEqual(info["opponent_hp"], 0.0)
 
     def test_rich_observation_includes_support_move_flags(self) -> None:
         for seed in range(1, 20):

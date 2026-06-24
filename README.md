@@ -4,9 +4,18 @@
 
 Watch an AI play Pokemon Showdown in a visible browser.
 
-ShowdownRL opens Pokemon Showdown, signs in with your account or a guest name,
-queues a Random Battle, and visibly clicks moves while you watch. It can also
-save a WebM recording of the battle.
+## About
+
+ShowdownRL is a local command-line tool for watching an automated Pokemon
+Showdown player in action. It opens the real Pokemon Showdown website, signs in
+with your account or a guest name, queues a Random Battle, and clicks moves in a
+visible browser so you can follow every decision.
+
+The live player can use a lightweight heuristic policy or a trained PPO move
+selector. It can also save WebM recordings, write local battle stats, and
+generate local reports for comparing runs over time. Credentials, battle logs,
+debug snapshots, recordings, and stats stay on your machine unless you choose to
+share them.
 
 ## Current AI Benchmark
 
@@ -18,46 +27,10 @@ but v3 still has the best KO win rate on the current rich-mechanics benchmark.
 
 ![Policy comparison chart](docs/assets/ai_policy_comparison.png)
 
-The charts below are generated from the published benchmark data in
+This chart is generated from the published benchmark data in
 [docs/benchmarks/current_evaluation.csv](docs/benchmarks/current_evaluation.csv).
-They average the two rich/type-aware evaluation seeds, with 1,000 simulator
+It summarizes the two rich/type-aware evaluation seeds, with 1,000 simulator
 episodes per seed.
-
-```mermaid
-xychart-beta
-    title "Average KO Win Rate by Policy"
-    x-axis ["Random", "Max dmg", "PPO v2", "PPO v3", "PPO v4", "Type aware"]
-    y-axis "Win rate %" 0 --> 25
-    bar [10.1, 14.5, 22.1, 24.3, 22.9, 23.2]
-```
-
-```mermaid
-xychart-beta
-    title "Average Battle Length by Policy"
-    x-axis ["Random", "Max dmg", "PPO v2", "PPO v3", "PPO v4", "Type aware"]
-    y-axis "Turns" 0 --> 11
-    bar [10.43, 6.63, 6.66, 7.76, 6.93, 6.68]
-```
-
-```mermaid
-pie showData
-    title PPO v3 rich aggregate record, 2,000 eval episodes
-    "Wins" : 486
-    "Losses" : 831
-    "Draws" : 683
-```
-
-```mermaid
-flowchart LR
-    A["Pokemon Showdown DOM"] --> B["Turn-state extractor"]
-    B --> C{"--policy ppo available?"}
-    C -->|yes| D["46-feature rich PPO observation"]
-    D --> E["PPO move choice"]
-    C -->|no or invalid action| F["Heuristic scorer"]
-    E --> G["Visible browser click"]
-    F --> G
-    G --> H["Local battle stats + optional debug snapshot"]
-```
 
 | Scenario | Policy | Episodes | Record | Win rate | Avg reward | Avg turns |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |

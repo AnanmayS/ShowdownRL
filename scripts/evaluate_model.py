@@ -9,7 +9,7 @@ Evaluates:
     - RandomPolicy
     - MaxDamagePolicy
     - TypeAwarePolicy
-    - PPO models passed with --model, or models/ppo_move_selection_v1.zip if present
+    - PPO models passed with --model, or the default packaged PPO model if present
 
 Saves results to results/evaluation.csv.
 """
@@ -28,6 +28,7 @@ from stable_baselines3 import PPO
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from showdownrl.simple_env import SimplePokemonMoveEnv
 from showdownrl.policies import random_policy, max_damage_policy, type_aware_policy
+from showdownrl.policy_bridge import default_model_path
 
 
 def git_sha(root: Path) -> str:
@@ -183,7 +184,7 @@ def main():
         results.append(stats)
         print(f"    win_rate={stats['win_rate']:.2%}, avg_reward={stats['average_reward']:.3f}")
 
-    model_paths = args.model or [root / "models" / "ppo_move_selection_v1.zip"]
+    model_paths = args.model or [default_model_path()]
     for raw_path in model_paths:
         model_path = raw_path if raw_path.is_absolute() else root / raw_path
         if not model_path.exists():

@@ -15,6 +15,16 @@ dependencies = [
   "playwright>=1.45",
   "platformdirs>=4.0",
 ]
+license = {text = "MIT"}
+keywords = ["pokemon", "showdown", "reinforcement-learning", "playwright"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
 
 [project.optional-dependencies]
 rl = [
@@ -32,3 +42,10 @@ showdownrl = "showdownrl.cli:main"
 
 [tool.setuptools]
 packages = ["showdownrl"]
+
+[tool.setuptools.data-files]
+models = [
+  "models/ppo_move_selection_v2_typed.zip",
+  "models/ppo_move_selection_v3_rich.zip",
+  "models/ppo_move_selection_v4_rich.zip",
+]

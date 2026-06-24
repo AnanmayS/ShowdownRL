@@ -1,8 +1,20 @@
 from __future__ import annotations
 
+import sys
+import tomllib
 import unittest
+from pathlib import Path
 
-from showdownrl.policy_bridge import RICH_OBS_SIZE, PPOMovePolicy, turn_state_to_observation, turn_state_to_rich_observation, type_effectiveness
+from showdownrl.policy_bridge import (
+    RICH_MODEL_FILENAME,
+    RICH_OBS_SIZE,
+    PPOMovePolicy,
+    ranked_switches,
+    model_search_paths,
+    turn_state_to_observation,
+    turn_state_to_rich_observation,
+    type_effectiveness,
+)
 
 
 class FakeModel:
@@ -16,6 +28,18 @@ class FakeModel:
 
 
 class PolicyBridgeTests(unittest.TestCase):
+    def test_default_model_is_declared_as_install_data(self) -> None:
+        pyproject_path = Path(__file__).resolve().parent.parent / "pyproject.toml"
+        data = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+        model_files = data["tool"]["setuptools"]["data-files"]["models"]
+
+        self.assertIn(f"models/{RICH_MODEL_FILENAME}", model_files)
+
+    def test_model_search_paths_include_installed_data_dir(self) -> None:
+        paths = model_search_paths(RICH_MODEL_FILENAME)
+
+        self.assertIn(Path(sys.prefix) / "models" / RICH_MODEL_FILENAME, paths)
+
     def test_turn_state_to_observation_projects_live_payload(self) -> None:
         obs = turn_state_to_observation(
             {
@@ -39,6 +63,26 @@ class PolicyBridgeTests(unittest.TestCase):
     def test_type_effectiveness_prefers_showdown_button_text(self) -> None:
         self.assertEqual(type_effectiveness({"type": "Ground", "text": "Doesn't affect the target"}, {}), 0.0)
         self.assertEqual(type_effectiveness({"type": "Fire", "text": "Super effective"}, {}), 2.0)
+
+    def test_ranked_switches_prefers_healthy_type_resist(self) -> None:
+        choices = [
+            {"index": 0, "name": "Scizor", "hp_percent": 35, "status": "BRN", "types": ["Bug", "Steel"]},
+            {"index": 1, "name": "Gyarados", "hp_percent": 90, "status": "", "types": ["Water", "Flying"]},
+        ]
+        ranked = ranked_switches(choices, {"opponent": {"types": ["Fire"]}})
+
+        self.assertEqual(ranked[0][0]["name"], "Gyarados")
+        self.assertGreater(ranked[0][1], ranked[1][1])
+
+    def test_ranked_switches_avoids_fainted_options(self) -> None:
+        ranked = ranked_switches(
+            [
+                {"index": 0, "name": "Fainted mon", "text": "Fainted mon 0%"},
+                {"index": 1, "name": "Backup", "hp_percent": 12},
+            ]
+        )
+
+        self.assertEqual(ranked[0][0]["name"], "Backup")
 
     def test_rich_observation_adds_move_context(self) -> None:
         obs = turn_state_to_rich_observation(

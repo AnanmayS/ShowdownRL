@@ -12,7 +12,18 @@ from pathlib import Path
 
 from showdownrl.config import CONFIG_FILE, DEFAULT_SITE, default_stats_dir, UserConfig, delete_config, load_config, merged_config, save_config
 from showdownrl.live import LiveOptions, run_live
-from showdownrl.stats import filter_records, load_battle_records, open_html_report, parse_since, terminal_summary, trend_summary, write_html_report
+from showdownrl.stats import (
+    filter_records,
+    grouped_summary_text,
+    load_battle_records,
+    open_html_report,
+    parse_since,
+    terminal_summary,
+    trend_summary,
+    write_csv_export,
+    write_html_report,
+    write_json_export,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -62,6 +73,9 @@ def build_parser() -> argparse.ArgumentParser:
     stats.add_argument("--html", action="store_true", help="Write a local HTML stats report.")
     stats.add_argument("--open", action="store_true", help="Write and open the local HTML stats report.")
     stats.add_argument("--trend", action="store_true", help="Show daily win-rate trend.")
+    stats.add_argument("--group-by", choices=["policy", "model", "format", "date"], help="Group the terminal summary.")
+    stats.add_argument("--export-csv", type=Path, help="Write filtered battle rows to a CSV file.")
+    stats.add_argument("--export-json", type=Path, help="Write filtered battle rows to a JSON file.")
 
     logout = subparsers.add_parser("logout", help="Delete saved local ShowdownRL credentials.")
     logout.add_argument("--yes", action="store_true", help="Do not ask for confirmation.")
@@ -203,9 +217,18 @@ def stats_command(args: argparse.Namespace) -> int:
         if args.open:
             open_html_report(path)
     print(terminal_summary(records, corrupt_count=corrupt_count, stats_dir=args.stats_dir))
+    if args.group_by:
+        print()
+        print(grouped_summary_text(records, args.group_by))
     if args.trend:
         print()
         print(trend_summary(records))
+    if args.export_csv:
+        path = write_csv_export(records, args.export_csv)
+        print(f"CSV export: {path}")
+    if args.export_json:
+        path = write_json_export(records, args.export_json)
+        print(f"JSON export: {path}")
     return 0
 
 

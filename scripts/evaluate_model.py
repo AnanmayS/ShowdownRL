@@ -86,7 +86,17 @@ def parse_args():
     return parser.parse_args()
 
 
-def evaluate_policy(env_cls, policy_fn, n_episodes, seed, opponent_policy, mechanics, observation_mode):
+def evaluate_policy(
+    env_cls,
+    policy_fn,
+    n_episodes,
+    seed,
+    opponent_policy,
+    mechanics,
+    observation_mode,
+    *,
+    pass_env: bool = False,
+):
     """Run n_episodes and return stats dict."""
     policy_seed = int(hashlib.sha256(policy_fn.__name__.encode()).hexdigest()[:8], 16)
     np.random.seed(seed + policy_seed % 10000)
@@ -111,7 +121,7 @@ def evaluate_policy(env_cls, policy_fn, n_episodes, seed, opponent_policy, mecha
         final_info = {}
 
         while not done:
-            action = policy_fn(obs)
+            action = policy_fn(obs, env) if pass_env else policy_fn(obs)
             obs, reward, terminated, truncated, final_info = env.step(action)
             ep_reward += reward
             turns += 1
@@ -143,6 +153,33 @@ def evaluate_policy(env_cls, policy_fn, n_episodes, seed, opponent_policy, mecha
         "average_reward": np.mean(rewards),
         "average_turns": np.mean(turns_list),
     }
+
+
+def load_rl_model(model_path: Path):
+    if "maskable" in model_path.stem:
+        try:
+            from sb3_contrib import MaskablePPO
+        except ImportError as exc:
+            raise RuntimeError(
+                f"{model_path.name} is a MaskablePPO model, but sb3-contrib is not installed."
+            ) from exc
+        return MaskablePPO.load(str(model_path)), "maskable_ppo"
+
+    try:
+        return PPO.load(str(model_path)), "ppo"
+    except Exception as ppo_error:
+        try:
+            from sb3_contrib import MaskablePPO
+        except ImportError as exc:
+            raise RuntimeError(
+                f"Could not load {model_path.name} as PPO, and sb3-contrib is not installed for MaskablePPO."
+            ) from exc
+        try:
+            return MaskablePPO.load(str(model_path)), "maskable_ppo"
+        except Exception as maskable_error:
+            raise RuntimeError(
+                f"Could not load {model_path.name} as PPO ({ppo_error}) or MaskablePPO ({maskable_error})."
+            ) from maskable_error
 
 
 def main():
@@ -193,12 +230,15 @@ def main():
 
         policy_name = model_path.stem
         print(f"\n  {policy_name}...")
-        model = PPO.load(str(model_path))
+        model, model_kind = load_rl_model(model_path)
         model_shape = getattr(model.observation_space, "shape", ())
         model_observation_mode = "rich" if model_shape and int(model_shape[0]) > 14 else "simple"
 
-        def ppo_policy(obs):
-            action, _ = model.predict(obs, deterministic=True)
+        def ppo_policy(obs, env):
+            predict_kwargs = {"deterministic": True}
+            if model_kind == "maskable_ppo":
+                predict_kwargs["action_masks"] = env.action_masks()
+            action, _ = model.predict(obs, **predict_kwargs)
             return int(action)
 
         ppo_policy.__name__ = policy_name
@@ -210,6 +250,7 @@ def main():
             args.opponent_policy,
             args.mechanics,
             model_observation_mode if args.observation_mode == "auto" else args.observation_mode,
+            pass_env=True,
         )
         stats.update(
             {

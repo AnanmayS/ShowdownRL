@@ -4,7 +4,7 @@ import argparse
 import unittest
 
 try:
-    from scripts.train_ppo import build_ppo_kwargs, parse_net_arch
+    from scripts.train_ppo import build_ppo_kwargs, parse_net_arch, resolve_algorithm
 except ImportError as exc:  # pragma: no cover - depends on optional rl extras
     build_ppo_kwargs = None
     parse_net_arch = None
@@ -47,6 +47,12 @@ class TrainPpoTests(unittest.TestCase):
         self.assertEqual(kwargs["target_kl"], 0.03)
         self.assertEqual(kwargs["policy_kwargs"]["net_arch"], [128, 128])
         self.assertFalse(kwargs["policy_kwargs"]["ortho_init"])
+
+    def test_resolve_algorithm_supports_plain_ppo(self) -> None:
+        algorithm_class, callback_class = resolve_algorithm("ppo")
+
+        self.assertEqual(algorithm_class.__name__, "PPO")
+        self.assertEqual(callback_class.__name__, "EvalCallback")
 
 
 if __name__ == "__main__":

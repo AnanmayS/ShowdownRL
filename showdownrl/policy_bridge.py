@@ -20,6 +20,7 @@ from showdownrl.ai import (
 MODEL_FILENAME = "ppo_move_selection_v2_typed.zip"
 RICH_MODEL_FILENAME = "ppo_move_selection_v3_rich.zip"
 FINETUNED_MODEL_FILENAME = "ppo_move_selection_v5_rich_finetuned.zip"
+MASKABLE_MODEL_FILENAME = "maskable_ppo_move_selection_v6_rich.zip"
 LEGACY_MODEL_FILENAME = "ppo_move_selection_v1.zip"
 DEFAULT_MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / MODEL_FILENAME
 SIMPLE_OBS_SIZE = 14
@@ -41,6 +42,7 @@ def model_search_paths(filename: str = RICH_MODEL_FILENAME) -> list[Path]:
 
 def default_model_path() -> Path:
     candidates = [
+        *model_search_paths(MASKABLE_MODEL_FILENAME),
         *model_search_paths(FINETUNED_MODEL_FILENAME),
         *model_search_paths(RICH_MODEL_FILENAME),
         *model_search_paths(MODEL_FILENAME),
@@ -281,7 +283,30 @@ class PPOMovePolicy:
         except ImportError as exc:
             raise PolicyLoadError("Install RL dependencies with `pip install -e '.[rl]'` to use --policy ppo.") from exc
 
-        self.model = PPO.load(str(self.model_path))
+        if "maskable" in self.model_path.stem:
+            try:
+                from sb3_contrib import MaskablePPO
+            except ImportError as exc:
+                raise PolicyLoadError(
+                    "Install RL dependencies with `pip install -e '.[rl]'` to use a MaskablePPO model."
+                ) from exc
+            self.model = MaskablePPO.load(str(self.model_path))
+        else:
+            try:
+                self.model = PPO.load(str(self.model_path))
+            except Exception as ppo_error:
+                try:
+                    from sb3_contrib import MaskablePPO
+                except ImportError as exc:
+                    raise PolicyLoadError(
+                        "Install RL dependencies with `pip install -e '.[rl]'` to use a MaskablePPO model."
+                    ) from exc
+                try:
+                    self.model = MaskablePPO.load(str(self.model_path))
+                except Exception as maskable_error:
+                    raise PolicyLoadError(
+                        f"Could not load PPO model: {ppo_error}; MaskablePPO fallback also failed: {maskable_error}"
+                    ) from maskable_error
         self.observation_size = int(getattr(self.model.observation_space, "shape", (SIMPLE_OBS_SIZE,))[0])
 
     def choose(self, moves: list[dict[str, Any]], turn_state: dict[str, Any] | None) -> PolicyChoice:
@@ -300,7 +325,14 @@ class PPOMovePolicy:
                 model_observation: Any = np.array(observation, dtype=np.float32)
             except ImportError:
                 model_observation = observation
-            action, _ = self.model.predict(model_observation, deterministic=True)
+            predict_kwargs = {"deterministic": True}
+            if "sb3_contrib" in type(self.model).__module__:
+                import numpy as np
+
+                action_masks = np.zeros(4, dtype=bool)
+                action_masks[: min(len(moves), 4)] = True
+                predict_kwargs["action_masks"] = action_masks
+            action, _ = self.model.predict(model_observation, **predict_kwargs)
             if isinstance(action, (list, tuple)):
                 action = action[0]
             elif hasattr(action, "item"):

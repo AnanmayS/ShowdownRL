@@ -75,6 +75,12 @@ def parse_args():
         default=Path("models/ppo_move_selection_v2.zip"),
         help="Output model path.",
     )
+    parser.add_argument(
+        "--algorithm",
+        choices=["ppo", "maskable_ppo"],
+        default="ppo",
+        help="RL algorithm to train.",
+    )
     parser.add_argument("--resume-from", type=Path, help="Existing PPO model to continue training.")
     parser.add_argument("--n-envs", type=positive_int, default=8, help="Parallel env copies for PPO rollouts.")
     parser.add_argument("--n-steps", type=positive_int, default=256, help="Rollout steps per env before each update.")
@@ -130,10 +136,24 @@ def build_ppo_kwargs(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def resolve_algorithm(algorithm: str):
+    if algorithm == "ppo":
+        return PPO, EvalCallback
+    try:
+        from sb3_contrib import MaskablePPO
+        from sb3_contrib.common.maskable.callbacks import MaskableEvalCallback
+    except ImportError as exc:
+        raise SystemExit(
+            "MaskablePPO requires sb3-contrib. Install RL dependencies with `pip install -e '.[rl]'`."
+        ) from exc
+    return MaskablePPO, MaskableEvalCallback
+
+
 def write_metadata(args: argparse.Namespace, save_path: Path, best_model_dir: Path | None) -> Path:
     metadata_path = save_path.with_suffix(".metadata.json")
     metadata = {
         "created_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "algorithm": args.algorithm,
         "model_path": str(save_path),
         "resume_from": str(args.resume_from or ""),
         "best_model_dir": str(best_model_dir) if best_model_dir else "",
@@ -163,26 +183,27 @@ def main():
         )
 
     print(
-        f"Training PPO for {args.timesteps} timesteps "
+        f"Training {args.algorithm} for {args.timesteps} timesteps "
         f"({args.n_envs} envs, {args.mechanics}/{args.observation_mode}, {args.opponent_policy} opponent)...",
         flush=True,
     )
 
+    algorithm_class, eval_callback_class = resolve_algorithm(args.algorithm)
     env = DummyVecEnv([make_env(args, rank) for rank in range(args.n_envs)])
     eval_env = DummyVecEnv([make_env(args, 10_000)])
     if args.resume_from:
         resume_path = args.resume_from if args.resume_from.is_absolute() else root / args.resume_from
-        print(f"Resuming PPO model from {resume_path}", flush=True)
-        model = PPO.load(str(resume_path), env=env, seed=args.seed, verbose=1)
+        print(f"Resuming {args.algorithm} model from {resume_path}", flush=True)
+        model = algorithm_class.load(str(resume_path), env=env, seed=args.seed, verbose=1)
     else:
-        model = PPO("MlpPolicy", env, verbose=1, seed=args.seed, **build_ppo_kwargs(args))
+        model = algorithm_class("MlpPolicy", env, verbose=1, seed=args.seed, **build_ppo_kwargs(args))
 
     callbacks = []
     best_model_dir: Path | None = None
     if args.eval_frequency:
         best_model_dir = save_path.parent / f"{save_path.stem}_best"
         callbacks.append(
-            EvalCallback(
+            eval_callback_class(
                 eval_env,
                 best_model_save_path=str(best_model_dir),
                 log_path=str(root / "results" / "training_eval"),

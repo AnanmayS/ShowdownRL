@@ -177,6 +177,28 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             "observation_mode": self.observation_mode,
         }
 
+    def action_masks(self) -> np.ndarray:
+        """Return a state-dependent valid-action mask for MaskablePPO."""
+        masks = np.ones(4, dtype=bool)
+        if not self.moves:
+            return masks
+
+        for index, move in enumerate(self.moves):
+            bp, acc, multiplier, _, _, role = self._move_values(move)
+            expected_damage = bp * acc * multiplier * self.own_attack_boost * 0.25
+            if role == ROLE_ATTACK:
+                masks[index] = expected_damage > 0.0
+            elif role == ROLE_RECOVER:
+                masks[index] = self.own_hp <= 0.85
+            elif role == ROLE_SETUP:
+                masks[index] = self.own_attack_boost < 1.8 and self.own_hp >= 0.35
+            elif role == ROLE_STATUS:
+                masks[index] = self.opponent_attack_boost > 0.45 and self.opponent_hp >= 0.25
+
+        if not masks.any():
+            return np.ones(4, dtype=bool)
+        return masks
+
     def _opponent_action(self) -> int:
         policy = self.current_opponent_policy
         if policy == "max_damage":

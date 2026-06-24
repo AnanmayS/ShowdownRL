@@ -31,6 +31,7 @@ rl = [
   "gymnasium",
   "matplotlib",
   "numpy",
+  "optuna",
   "pandas",
   "poke-env",
   "sb3-contrib",

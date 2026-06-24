@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -30,6 +31,12 @@ class Candidate:
     algorithm: str
     opponent_policy: str
     seed: int
+    learning_rate: float | None = None
+    ent_coef: float | None = None
+    n_steps: int | None = None
+    batch_size: int | None = None
+    n_epochs: int | None = None
+    target_kl: float | None = None
 
 
 @dataclass(frozen=True)
@@ -43,6 +50,12 @@ class Aggregate:
     non_loss_rate: float
     average_reward: float
     average_turns: float
+    seed_count: int
+    seed_passes: int
+    seed_pass_rate: float
+    win_rate_stderr: float
+    non_loss_rate_stderr: float
+    average_reward_stderr: float
     recommendation: str
 
 
@@ -73,6 +86,59 @@ def parse_candidate(value: str) -> Candidate:
     except ValueError as exc:
         raise argparse.ArgumentTypeError("candidate seed must be an integer") from exc
     return Candidate(name=name, algorithm=algorithm, opponent_policy=opponent_policy, seed=seed)
+
+
+def generate_tuning_candidates(args: argparse.Namespace) -> list[Candidate]:
+    if args.tune_trials <= 0:
+        return []
+    try:
+        import optuna
+    except ImportError as exc:
+        raise SystemExit(
+            "Optuna tuning requires optuna. Install RL dependencies with `pip install -e '.[rl]'`."
+        ) from exc
+
+    sampler = optuna.samplers.TPESampler(seed=args.tune_seed)
+    study = optuna.create_study(
+        study_name=args.tune_study_name,
+        direction="maximize",
+        sampler=sampler,
+    )
+    n_step_choices = [
+        steps
+        for steps in [16, 32, 64, 128, 256, 512]
+        if steps * args.n_envs <= args.timesteps
+    ]
+    if not n_step_choices:
+        n_step_choices = [max(1, args.timesteps // args.n_envs)]
+    candidates: list[Candidate] = []
+    for index in range(args.tune_trials):
+        trial = study.ask()
+        n_steps = trial.suggest_categorical("n_steps", n_step_choices)
+        rollout_size = n_steps * args.n_envs
+        batch_choices = [
+            batch
+            for batch in [16, 32, 64, 128, 256, 512]
+            if batch <= rollout_size and rollout_size % batch == 0
+        ]
+        if not batch_choices:
+            batch_choices = [rollout_size]
+        batch_size = trial.suggest_categorical("batch_size", batch_choices)
+        candidates.append(
+            Candidate(
+                name=f"{args.tune_base_name}_trial_{index:03d}",
+                algorithm=args.tune_algorithm,
+                opponent_policy=args.tune_opponent_policy,
+                seed=args.tune_seed + index,
+                learning_rate=trial.suggest_float("learning_rate", 5e-5, 8e-4, log=True),
+                ent_coef=trial.suggest_float("ent_coef", 0.0, 0.04),
+                n_steps=n_steps,
+                batch_size=batch_size,
+                n_epochs=trial.suggest_int("n_epochs", 4, 12),
+                target_kl=trial.suggest_float("target_kl", 0.015, 0.06),
+            )
+        )
+    return candidates
 
 
 def parse_args() -> argparse.Namespace:
@@ -117,6 +183,31 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--ent-coef", type=float, default=0.01)
     parser.add_argument("--target-kl", type=float, default=0.03)
     parser.add_argument(
+        "--min-seed-pass-rate",
+        type=float,
+        default=0.70,
+        help="Fraction of evaluation seeds where a candidate must beat the baseline on all gate metrics.",
+    )
+    parser.add_argument(
+        "--tune-trials",
+        type=int,
+        default=0,
+        help="Generate this many Optuna-sampled candidate hyperparameter trials.",
+    )
+    parser.add_argument("--tune-seed", type=int, default=2026)
+    parser.add_argument("--tune-base-name", default="optuna_v7")
+    parser.add_argument("--tune-study-name", default="showdownrl")
+    parser.add_argument(
+        "--tune-algorithm",
+        choices=sorted(ALGORITHMS),
+        default="maskable_ppo",
+    )
+    parser.add_argument(
+        "--tune-opponent-policy",
+        choices=sorted(OPPONENT_POLICIES),
+        default="mixed",
+    )
+    parser.add_argument(
         "--current-model",
         type=Path,
         help="Default model to compare against. Defaults to showdownrl.policy_bridge.default_model_path().",
@@ -158,6 +249,10 @@ def candidate_model_path(output_dir: Path, candidate: Candidate) -> Path:
     return output_dir / "models" / f"{candidate.name}.zip"
 
 
+def candidate_value(candidate_value: object | None, default_value: object) -> str:
+    return str(default_value if candidate_value is None else candidate_value)
+
+
 def train_command(args: argparse.Namespace, candidate: Candidate, model_path: Path) -> list[str]:
     return [
         sys.executable,
@@ -179,17 +274,17 @@ def train_command(args: argparse.Namespace, candidate: Candidate, model_path: Pa
         "--n-envs",
         str(args.n_envs),
         "--n-steps",
-        str(args.n_steps),
+        candidate_value(candidate.n_steps, args.n_steps),
         "--batch-size",
-        str(args.batch_size),
+        candidate_value(candidate.batch_size, args.batch_size),
         "--n-epochs",
-        str(args.n_epochs),
+        candidate_value(candidate.n_epochs, args.n_epochs),
         "--learning-rate",
-        str(args.learning_rate),
+        candidate_value(candidate.learning_rate, args.learning_rate),
         "--ent-coef",
-        str(args.ent_coef),
+        candidate_value(candidate.ent_coef, args.ent_coef),
         "--target-kl",
-        str(args.target_kl),
+        candidate_value(candidate.target_kl, args.target_kl),
     ]
 
 
@@ -239,7 +334,41 @@ def load_rows(paths: list[Path]) -> list[dict[str, str]]:
     return rows
 
 
-def aggregate_rows(rows: list[dict[str, str]], policies: set[str], baseline_policy: str) -> list[Aggregate]:
+def seed_key(row: dict[str, str], fallback: int) -> str:
+    return row.get("seed") or row.get("scenario") or str(fallback)
+
+
+def standard_error(values: list[float]) -> float:
+    if len(values) < 2:
+        return 0.0
+    mean = sum(values) / len(values)
+    variance = sum((value - mean) ** 2 for value in values) / (len(values) - 1)
+    return math.sqrt(variance) / math.sqrt(len(values))
+
+
+def policy_seed_metrics(policy_rows: list[dict[str, str]]) -> dict[str, dict[str, float]]:
+    metrics: dict[str, dict[str, float]] = {}
+    for index, row in enumerate(policy_rows):
+        key = seed_key(row, index)
+        episodes = int(row["episodes"])
+        wins = int(row["wins"])
+        draws = int(row["draws"])
+        metrics[key] = {
+            "episodes": float(episodes),
+            "win_rate": wins / episodes,
+            "non_loss_rate": (wins + draws) / episodes,
+            "average_reward": float(row["average_reward"]),
+        }
+    return metrics
+
+
+def aggregate_rows(
+    rows: list[dict[str, str]],
+    policies: set[str],
+    baseline_policy: str,
+    *,
+    min_seed_pass_rate: float = 0.70,
+) -> list[Aggregate]:
     grouped: dict[str, list[dict[str, str]]] = {}
     for row in rows:
         policy = row["policy"]
@@ -250,6 +379,7 @@ def aggregate_rows(rows: list[dict[str, str]], policies: set[str], baseline_poli
         raise SystemExit(f"Baseline policy {baseline_policy!r} was not present in evaluation output.")
 
     aggregates: list[Aggregate] = []
+    seed_metrics = {policy: policy_seed_metrics(policy_rows) for policy, policy_rows in grouped.items()}
     for policy, policy_rows in grouped.items():
         episodes = sum(int(row["episodes"]) for row in policy_rows)
         wins = sum(int(row["wins"]) for row in policy_rows)
@@ -257,8 +387,13 @@ def aggregate_rows(rows: list[dict[str, str]], policies: set[str], baseline_poli
         draws = sum(int(row["draws"]) for row in policy_rows)
         win_rate = wins / episodes
         non_loss_rate = (wins + draws) / episodes
-        average_reward = sum(float(row["average_reward"]) for row in policy_rows) / len(policy_rows)
-        average_turns = sum(float(row["average_turns"]) for row in policy_rows) / len(policy_rows)
+        average_reward = (
+            sum(float(row["average_reward"]) * int(row["episodes"]) for row in policy_rows) / episodes
+        )
+        average_turns = (
+            sum(float(row["average_turns"]) * int(row["episodes"]) for row in policy_rows) / episodes
+        )
+        policy_metrics = seed_metrics[policy]
         aggregates.append(
             Aggregate(
                 policy=policy,
@@ -270,21 +405,45 @@ def aggregate_rows(rows: list[dict[str, str]], policies: set[str], baseline_poli
                 non_loss_rate=non_loss_rate,
                 average_reward=average_reward,
                 average_turns=average_turns,
+                seed_count=len(policy_metrics),
+                seed_passes=len(policy_metrics) if policy == baseline_policy else 0,
+                seed_pass_rate=1.0 if policy == baseline_policy else 0.0,
+                win_rate_stderr=standard_error([item["win_rate"] for item in policy_metrics.values()]),
+                non_loss_rate_stderr=standard_error(
+                    [item["non_loss_rate"] for item in policy_metrics.values()]
+                ),
+                average_reward_stderr=standard_error(
+                    [item["average_reward"] for item in policy_metrics.values()]
+                ),
                 recommendation="baseline" if policy == baseline_policy else "",
             )
         )
 
     baseline = next(item for item in aggregates if item.policy == baseline_policy)
+    baseline_seed_metrics = seed_metrics[baseline_policy]
     ranked: list[Aggregate] = []
     for item in aggregates:
         if item.policy == baseline_policy:
             ranked.append(item)
             continue
+        candidate_seed_metrics = seed_metrics[item.policy]
+        comparable_seeds = sorted(set(candidate_seed_metrics) & set(baseline_seed_metrics))
+        seed_passes = sum(
+            1
+            for seed in comparable_seeds
+            if candidate_seed_metrics[seed]["win_rate"] > baseline_seed_metrics[seed]["win_rate"]
+            and candidate_seed_metrics[seed]["non_loss_rate"]
+            > baseline_seed_metrics[seed]["non_loss_rate"]
+            and candidate_seed_metrics[seed]["average_reward"]
+            > baseline_seed_metrics[seed]["average_reward"]
+        )
+        seed_pass_rate = seed_passes / len(comparable_seeds) if comparable_seeds else 0.0
         recommendation = (
             "promote"
             if item.win_rate > baseline.win_rate
             and item.non_loss_rate > baseline.non_loss_rate
             and item.average_reward > baseline.average_reward
+            and seed_pass_rate >= min_seed_pass_rate
             else "do-not-promote"
         )
         ranked.append(
@@ -298,6 +457,12 @@ def aggregate_rows(rows: list[dict[str, str]], policies: set[str], baseline_poli
                 non_loss_rate=item.non_loss_rate,
                 average_reward=item.average_reward,
                 average_turns=item.average_turns,
+                seed_count=len(comparable_seeds),
+                seed_passes=seed_passes,
+                seed_pass_rate=seed_pass_rate,
+                win_rate_stderr=item.win_rate_stderr,
+                non_loss_rate_stderr=item.non_loss_rate_stderr,
+                average_reward_stderr=item.average_reward_stderr,
                 recommendation=recommendation,
             )
         )
@@ -319,6 +484,12 @@ def write_summary_csv(aggregates: list[Aggregate], path: Path) -> None:
                 "non_loss_rate",
                 "average_reward",
                 "average_turns",
+                "seed_count",
+                "seed_passes",
+                "seed_pass_rate",
+                "win_rate_stderr",
+                "non_loss_rate_stderr",
+                "average_reward_stderr",
                 "recommendation",
             ],
         )
@@ -335,6 +506,12 @@ def write_summary_csv(aggregates: list[Aggregate], path: Path) -> None:
                     "non_loss_rate": f"{item.non_loss_rate:.6f}",
                     "average_reward": f"{item.average_reward:.6f}",
                     "average_turns": f"{item.average_turns:.3f}",
+                    "seed_count": item.seed_count,
+                    "seed_passes": item.seed_passes,
+                    "seed_pass_rate": f"{item.seed_pass_rate:.6f}",
+                    "win_rate_stderr": f"{item.win_rate_stderr:.6f}",
+                    "non_loss_rate_stderr": f"{item.non_loss_rate_stderr:.6f}",
+                    "average_reward_stderr": f"{item.average_reward_stderr:.6f}",
                     "recommendation": item.recommendation,
                 }
             )
@@ -365,12 +542,27 @@ def write_report(
         "",
         "## Candidates",
         "",
-        "| Name | Algorithm | Train opponent | Train seed |",
-        "| --- | --- | --- | ---: |",
+        "| Name | Algorithm | Train opponent | Train seed | LR | Entropy | Steps | Batch | Epochs | Target KL |",
+        "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for candidate in candidates:
         lines.append(
-            f"| `{candidate.name}` | `{candidate.algorithm}` | `{candidate.opponent_policy}` | {candidate.seed} |"
+            "| "
+            + " | ".join(
+                [
+                    f"`{candidate.name}`",
+                    f"`{candidate.algorithm}`",
+                    f"`{candidate.opponent_policy}`",
+                    str(candidate.seed),
+                    f"{candidate.learning_rate:.6g}" if candidate.learning_rate is not None else "default",
+                    f"{candidate.ent_coef:.4g}" if candidate.ent_coef is not None else "default",
+                    str(candidate.n_steps) if candidate.n_steps is not None else "default",
+                    str(candidate.batch_size) if candidate.batch_size is not None else "default",
+                    str(candidate.n_epochs) if candidate.n_epochs is not None else "default",
+                    f"{candidate.target_kl:.4g}" if candidate.target_kl is not None else "default",
+                ]
+            )
+            + " |"
         )
 
     lines.extend(
@@ -378,7 +570,7 @@ def write_report(
             "",
             "## Results",
             "",
-            "| Policy | Episodes | Record (W-L-D) | Win rate | Non-loss | Avg reward | Avg turns | Recommendation |",
+            "| Policy | Episodes | Record (W-L-D) | Win rate | Non-loss | Avg reward | Seed pass | Recommendation |",
             "| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
         ]
     )
@@ -393,8 +585,31 @@ def write_report(
                     pct(item.win_rate),
                     pct(item.non_loss_rate),
                     signed(item.average_reward),
-                    f"{item.average_turns:.2f}",
+                    f"{item.seed_passes}/{item.seed_count} ({pct(item.seed_pass_rate)})",
                     item.recommendation,
+                ]
+            )
+            + " |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Across-Seed Uncertainty",
+            "",
+            "| Policy | Win rate SE | Non-loss SE | Avg reward SE |",
+            "| --- | ---: | ---: | ---: |",
+        ]
+    )
+    for item in sorted(aggregates, key=lambda entry: entry.win_rate, reverse=True):
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    f"`{item.policy}`",
+                    pct(item.win_rate_stderr),
+                    pct(item.non_loss_rate_stderr),
+                    signed(item.average_reward_stderr),
                 ]
             )
             + " |"
@@ -406,11 +621,13 @@ def write_report(
         lines.append(
             "Promotion candidate(s): "
             + ", ".join(f"`{policy}`" for policy in promotable)
-            + ". These beat the current default on win rate, non-loss rate, and average reward."
+            + ". These beat the current default on aggregate win rate, non-loss rate, average reward, "
+            + f"and at least {pct(args.min_seed_pass_rate)} of comparable evaluation seeds."
         )
     else:
         lines.append(
-            "No candidate beat the current default on win rate, non-loss rate, and average reward."
+            "No candidate beat the current default on aggregate win rate, non-loss rate, "
+            f"average reward, and at least {pct(args.min_seed_pass_rate)} of comparable evaluation seeds."
         )
 
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -418,7 +635,16 @@ def write_report(
 
 def main() -> int:
     args = parse_args()
+    if not 0.0 <= args.min_seed_pass_rate <= 1.0:
+        raise SystemExit("--min-seed-pass-rate must be between 0 and 1.")
+    if args.tune_trials < 0:
+        raise SystemExit("--tune-trials must be zero or greater.")
+
     candidates = args.candidate or [parse_candidate(spec) for spec in DEFAULT_CANDIDATE_SPECS]
+    candidates = [*candidates, *generate_tuning_candidates(args)]
+    if not candidates:
+        raise SystemExit("No candidates were provided or generated.")
+
     output_dir = experiment_dir(args)
     model_paths = [candidate_model_path(output_dir, candidate) for candidate in candidates]
     current_model = current_model_path(args)
@@ -445,7 +671,12 @@ def main() -> int:
 
     rows = load_rows(eval_paths)
     policies = {current_model.stem, *(path.stem for path in model_paths)}
-    aggregates = aggregate_rows(rows, policies, current_model.stem)
+    aggregates = aggregate_rows(
+        rows,
+        policies,
+        current_model.stem,
+        min_seed_pass_rate=args.min_seed_pass_rate,
+    )
     summary_path = output_dir / "experiment_summary.csv"
     report_path = output_dir / "report.md"
     write_summary_csv(aggregates, summary_path)

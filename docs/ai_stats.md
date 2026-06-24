@@ -5,22 +5,25 @@ This report summarizes the published benchmark in
 
 ## Current Result
 
-The trained PPO v3 policy uses a richer 46-feature observation that includes
+The fine-tuned PPO v5 policy uses a richer 46-feature observation that includes
 per-move expected damage, STAB, type advantage, finish ranges, recovery, setup,
 and status flags. On rich mechanics, win rate counts actual simulated KOs and
 unfinished episodes are tracked as draws.
 
-The v4 experiment added mixed-opponent training and anti-stall reward shaping,
-but it did not beat v3 on either evaluation seed. The default live PPO model
-therefore remains `ppo_move_selection_v3_rich.zip`.
+The v5 checkpoint continues training from the previous v3 default with
+vectorized rollouts and deterministic evaluation checkpoints. It beats v3 on
+both fixed evaluation seeds, so the default live PPO model is now
+`ppo_move_selection_v5_rich_finetuned.zip`.
 
 ## Benchmark Table
 
 | Scenario | Policy | Episodes | Record | Win rate | Avg reward | Avg turns |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Rich/type-aware seed 42 | Fine-tuned PPO v5 | 1000 | 338-351-311 | 33.8% | +0.441 | 7.81 |
 | Rich/type-aware seed 42 | Trained PPO v3 | 1000 | 246-410-344 | 24.6% | +0.182 | 7.76 |
 | Rich/type-aware seed 42 | Type aware | 1000 | 236-398-366 | 23.6% | +0.304 | 6.67 |
 | Rich/type-aware seed 42 | Experimental PPO v4 | 1000 | 233-426-341 | 23.3% | +0.193 | 6.92 |
+| Rich/type-aware seed 99 | Fine-tuned PPO v5 | 1000 | 324-365-311 | 32.4% | +0.405 | 7.82 |
 | Rich/type-aware seed 99 | Trained PPO v3 | 1000 | 240-421-339 | 24.0% | +0.159 | 7.76 |
 | Rich/type-aware seed 99 | Type aware | 1000 | 228-409-363 | 22.8% | +0.277 | 6.70 |
 | Rich/type-aware seed 99 | Experimental PPO v4 | 1000 | 225-436-339 | 22.5% | +0.168 | 6.95 |
@@ -48,7 +51,8 @@ To smoke-test the benchmark command generation without running RL evaluation:
 python scripts/regenerate_benchmarks.py --dry-run --episodes 2
 ```
 
-Model artifacts: `ppo_move_selection_v2_typed.zip`, `ppo_move_selection_v3_rich.zip`, `ppo_move_selection_v4_rich.zip`  
+Model artifacts: `ppo_move_selection_v2_typed.zip`, `ppo_move_selection_v3_rich.zip`, `ppo_move_selection_v4_rich.zip`, `ppo_move_selection_v5_rich_finetuned.zip`
+
 Evaluation CSV timestamp: `2026-06-24`
 
 These numbers benchmark the experimental simulator policy. The live browser

@@ -19,6 +19,7 @@ from showdownrl.ai import (
 
 MODEL_FILENAME = "ppo_move_selection_v2_typed.zip"
 RICH_MODEL_FILENAME = "ppo_move_selection_v3_rich.zip"
+FINETUNED_MODEL_FILENAME = "ppo_move_selection_v5_rich_finetuned.zip"
 LEGACY_MODEL_FILENAME = "ppo_move_selection_v1.zip"
 DEFAULT_MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / MODEL_FILENAME
 SIMPLE_OBS_SIZE = 14
@@ -40,6 +41,7 @@ def model_search_paths(filename: str = RICH_MODEL_FILENAME) -> list[Path]:
 
 def default_model_path() -> Path:
     candidates = [
+        *model_search_paths(FINETUNED_MODEL_FILENAME),
         *model_search_paths(RICH_MODEL_FILENAME),
         *model_search_paths(MODEL_FILENAME),
         *model_search_paths(LEGACY_MODEL_FILENAME),

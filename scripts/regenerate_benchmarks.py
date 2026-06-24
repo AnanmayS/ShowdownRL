@@ -18,6 +18,7 @@ DEFAULT_MODELS = [
     ROOT / "models" / "ppo_move_selection_v2_typed.zip",
     ROOT / "models" / "ppo_move_selection_v3_rich.zip",
     ROOT / "models" / "ppo_move_selection_v4_rich.zip",
+    ROOT / "models" / "ppo_move_selection_v5_rich_finetuned.zip",
 ]
 DEFAULT_SEEDS = [42, 99]
 
@@ -101,6 +102,7 @@ def policy_label(policy: str) -> str:
         "ppo_move_selection_v2_typed": "PPO v2 typed",
         "ppo_move_selection_v3_rich": "PPO v3 rich",
         "ppo_move_selection_v4_rich": "PPO v4 rich",
+        "ppo_move_selection_v5_rich_finetuned": "PPO v5 fine-tuned",
     }
     return labels.get(policy, policy.replace("_", " ").title())
 

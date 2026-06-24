@@ -19,11 +19,12 @@ share them.
 
 ## Current AI Benchmark
 
-The default trained simulator policy is `ppo_move_selection_v3_rich.zip`. It
-extends the original 14-feature PPO input with per-move context for expected
-damage, STAB, type advantage, finish ranges, recovery, setup, and status moves.
-The v4 experiment added mixed-opponent training and anti-stall reward shaping,
-but v3 still has the best KO win rate on the current rich-mechanics benchmark.
+The default trained simulator policy is
+`ppo_move_selection_v5_rich_finetuned.zip`. It fine-tunes the previous rich PPO
+checkpoint with vectorized rollouts and deterministic evaluation checkpoints.
+The rich PPO input extends the original 14-feature observation with per-move
+context for expected damage, STAB, type advantage, finish ranges, recovery,
+setup, and status moves.
 
 ![Policy comparison chart](docs/assets/ai_policy_comparison.png)
 
@@ -34,9 +35,11 @@ episodes per seed.
 
 | Scenario | Policy | Episodes | Record | Win rate | Avg reward | Avg turns |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Rich/type-aware seed 42 | Fine-tuned PPO v5 | 1000 | 338-351-311 | 33.8% | +0.441 | 7.81 |
 | Rich/type-aware seed 42 | Trained PPO v3 | 1000 | 246-410-344 | 24.6% | +0.182 | 7.76 |
 | Rich/type-aware seed 42 | Type aware | 1000 | 236-398-366 | 23.6% | +0.304 | 6.67 |
 | Rich/type-aware seed 42 | Experimental PPO v4 | 1000 | 233-426-341 | 23.3% | +0.193 | 6.92 |
+| Rich/type-aware seed 99 | Fine-tuned PPO v5 | 1000 | 324-365-311 | 32.4% | +0.405 | 7.82 |
 | Rich/type-aware seed 99 | Trained PPO v3 | 1000 | 240-421-339 | 24.0% | +0.159 | 7.76 |
 | Rich/type-aware seed 99 | Type aware | 1000 | 228-409-363 | 22.8% | +0.277 | 6.70 |
 | Rich/type-aware seed 99 | Experimental PPO v4 | 1000 | 225-436-339 | 22.5% | +0.168 | 6.95 |
@@ -132,7 +135,7 @@ showdownrl live --debug-policy
 showdownrl live --policy ppo
 
 # Use a specific PPO checkpoint
-showdownrl live --policy ppo --model-path models/ppo_move_selection_v3_rich.zip
+showdownrl live --policy ppo --model-path models/ppo_move_selection_v5_rich_finetuned.zip
 
 # Do not write local battle stats
 showdownrl live --no-stats
@@ -221,9 +224,9 @@ The repository also contains experimental reinforcement-learning scripts under
 ```bash
 pip install -e ".[rl]"
 python scripts/smoke_test.py
-python scripts/train_ppo.py --timesteps 2048 --opponent-policy type_aware
-python scripts/evaluate_model.py --episodes 100 --opponent-policy type_aware
-python scripts/generate_ai_stats.py
+python scripts/train_ppo.py --timesteps 2048 --mechanics rich --observation-mode rich --opponent-policy type_aware --output models/ppo_smoke.zip
+python scripts/evaluate_model.py --episodes 100 --mechanics rich --opponent-policy type_aware --model models/ppo_smoke.zip
+python scripts/regenerate_benchmarks.py --dry-run --episodes 2
 PYTHONPATH=. python -m unittest discover -s tests
 ```
 

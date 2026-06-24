@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import unittest
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from scripts.run_experiments import (
     Candidate,
     aggregate_rows,
     evaluate_command,
+    generate_tuning_candidates,
     parse_candidate,
     train_command,
 )
@@ -74,6 +76,7 @@ class RunExperimentsTests(unittest.TestCase):
         rows = [
             {
                 "policy": "current",
+                "seed": "42",
                 "episodes": "100",
                 "wins": "30",
                 "losses": "40",
@@ -85,6 +88,7 @@ class RunExperimentsTests(unittest.TestCase):
             },
             {
                 "policy": "winner",
+                "seed": "42",
                 "episodes": "100",
                 "wins": "35",
                 "losses": "35",
@@ -96,6 +100,7 @@ class RunExperimentsTests(unittest.TestCase):
             },
             {
                 "policy": "win_rate_only",
+                "seed": "42",
                 "episodes": "100",
                 "wins": "36",
                 "losses": "45",
@@ -113,6 +118,85 @@ class RunExperimentsTests(unittest.TestCase):
         self.assertEqual(recommendations["current"], "baseline")
         self.assertEqual(recommendations["winner"], "promote")
         self.assertEqual(recommendations["win_rate_only"], "do-not-promote")
+
+    def test_seed_gate_blocks_candidate_that_only_wins_one_seed(self) -> None:
+        rows = [
+            {
+                "policy": "current",
+                "seed": "42",
+                "episodes": "100",
+                "wins": "30",
+                "losses": "40",
+                "draws": "30",
+                "average_reward": "0.40",
+                "average_turns": "8.0",
+            },
+            {
+                "policy": "current",
+                "seed": "99",
+                "episodes": "100",
+                "wins": "30",
+                "losses": "40",
+                "draws": "30",
+                "average_reward": "0.40",
+                "average_turns": "8.0",
+            },
+            {
+                "policy": "spiky",
+                "seed": "42",
+                "episodes": "100",
+                "wins": "80",
+                "losses": "10",
+                "draws": "10",
+                "average_reward": "1.20",
+                "average_turns": "7.0",
+            },
+            {
+                "policy": "spiky",
+                "seed": "99",
+                "episodes": "100",
+                "wins": "10",
+                "losses": "70",
+                "draws": "20",
+                "average_reward": "-0.20",
+                "average_turns": "7.0",
+            },
+        ]
+
+        aggregates = aggregate_rows(
+            rows,
+            {"current", "spiky"},
+            "current",
+            min_seed_pass_rate=0.70,
+        )
+        spiky = next(item for item in aggregates if item.policy == "spiky")
+
+        self.assertEqual(spiky.seed_passes, 1)
+        self.assertEqual(spiky.seed_count, 2)
+        self.assertEqual(spiky.recommendation, "do-not-promote")
+
+    def test_generate_tuning_candidates_uses_optuna_ranges(self) -> None:
+        if importlib.util.find_spec("optuna") is None:
+            self.skipTest("optional Optuna dependency is missing")
+        args = argparse.Namespace(
+            tune_trials=2,
+            tune_seed=2026,
+            tune_study_name="test-study",
+            tune_base_name="trial",
+            tune_algorithm="maskable_ppo",
+            tune_opponent_policy="mixed",
+            timesteps=2048,
+            n_envs=8,
+        )
+
+        candidates = generate_tuning_candidates(args)
+
+        self.assertEqual(len(candidates), 2)
+        self.assertEqual(candidates[0].name, "trial_trial_000")
+        self.assertEqual(candidates[0].algorithm, "maskable_ppo")
+        self.assertEqual(candidates[0].opponent_policy, "mixed")
+        self.assertIsNotNone(candidates[0].learning_rate)
+        self.assertIn(candidates[0].n_steps, {16, 32, 64, 128, 256})
 
 
 if __name__ == "__main__":

@@ -231,6 +231,7 @@ python scripts/train_ppo.py --timesteps 2048 --mechanics rich --observation-mode
 python scripts/evaluate_model.py --episodes 100 --mechanics rich --opponent-policy type_aware --model models/ppo_smoke.zip
 python scripts/regenerate_benchmarks.py --dry-run --episodes 2
 python scripts/run_experiments.py --dry-run --timesteps 2048 --episodes 20
+python scripts/run_experiments.py --dry-run --tune-trials 4 --timesteps 2048 --episodes 20
 PYTHONPATH=. python -m unittest discover -s tests
 ```
 

@@ -12,6 +12,7 @@ from showdownrl.stats import (
     parse_since,
     summarize_records,
     terminal_summary,
+    trend_summary,
     write_html_report,
 )
 
@@ -26,6 +27,7 @@ class StatsTests(unittest.TestCase):
                     "result": "win",
                     "turns": 4,
                     "forced_switches": 1,
+                    "end_rating": 1200,
                     "format": "Random Battle",
                     "selected_moves": [{"name": "Thunderbolt"}, {"name": "Thunderbolt"}],
                 },
@@ -37,6 +39,7 @@ class StatsTests(unittest.TestCase):
                     "result": "loss",
                     "turns": 8,
                     "forced_switches": 0,
+                    "end_rating": 1185,
                     "format": "Random Battle",
                     "selected_moves": [{"name": "Surf"}],
                 },
@@ -55,11 +58,20 @@ class StatsTests(unittest.TestCase):
             self.assertEqual(summary["win_rate"], 0.5)
             self.assertEqual(summary["average_turns"], 6.0)
             self.assertEqual(summary["forced_switches"], 1)
+            self.assertEqual(summary["current_rating"], 1185)
+            self.assertEqual(summary["rating_delta"], -15)
+            self.assertEqual(summary["streak_result"], "loss")
+            self.assertEqual(summary["streak_count"], 1)
             self.assertEqual(summary["most_used_moves"][0], ("Thunderbolt", 2))
 
             text = terminal_summary(records, corrupt_count=corrupt, stats_dir=stats_dir)
             self.assertIn("Total battles: 2", text)
+            self.assertIn("Current rating: 1185 (-15)", text)
             self.assertIn("Skipped corrupt log lines: 1", text)
+
+            trend = trend_summary(records)
+            self.assertIn("2026-06-23: 1-0", trend)
+            self.assertIn("2026-06-24: 0-1", trend)
 
     def test_filters_by_since_and_format(self) -> None:
         records = [

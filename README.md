@@ -8,23 +8,27 @@ save a WebM recording of the battle.
 
 ## Current AI Benchmark
 
-The current trained simulator policy is `ppo_move_selection_v1.zip`. In the
-latest local benchmark, the trained PPO policy won **34 of 50 episodes** for a
-**68% win rate**.
+The current trained simulator policy is `ppo_move_selection_v2_typed.zip`. It
+was trained with typed mechanics, real type-chart multipliers, STAB, and a
+type-aware opponent. In the latest 1000-episode typed benchmark, v2 won
+**717 of 1000 episodes** for a **71.7% win rate**, up from **40.4%** for v1 on
+the same benchmark.
 
 ![ShowdownRL policy benchmark](docs/assets/ai_policy_comparison.png)
 
-| Policy | Episodes | Record | Win rate | Avg reward | Avg turns |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Type aware | 50 | 46-4 | 92% | +1.103 | 5.16 |
-| Max damage | 50 | 37-13 | 74% | +0.605 | 6.12 |
-| Trained PPO | 50 | 34-16 | 68% | +0.484 | 5.94 |
-| Random | 50 | 32-18 | 64% | +0.331 | 6.96 |
+| Scenario | Policy | Episodes | Record | Win rate | Avg reward | Avg turns |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Typed/type-aware | Type aware | 1000 | 747-253 | 74.7% | +0.498 | 5.08 |
+| Typed/type-aware | Trained PPO v2 | 1000 | 717-283 | 71.7% | +0.422 | 5.11 |
+| Typed/type-aware | Trained PPO v1 | 1000 | 404-596 | 40.4% | -0.387 | 5.28 |
+| Toy/random | Type aware | 1000 | 933-67 | 93.3% | +1.132 | 5.29 |
+| Toy/random | Trained PPO v2 | 1000 | 923-77 | 92.3% | +1.105 | 5.33 |
+| Toy/random | Trained PPO v1 | 1000 | 729-271 | 72.9% | +0.568 | 6.18 |
 
-The simple type-aware baseline is still the strongest policy in this simulator,
-so the next training goal is to beat that baseline. See
-[docs/ai_stats.md](docs/ai_stats.md) for the full report and regeneration
-commands.
+The type-aware baseline is still slightly stronger on the typed benchmark, so
+the next training goal is to beat that baseline consistently. See
+[docs/benchmarks/current_evaluation.csv](docs/benchmarks/current_evaluation.csv)
+for the side-by-side benchmark data.
 
 ## Install
 
@@ -102,8 +106,17 @@ showdownrl live --max-turns 3
 # Play more than one battle in the same run
 showdownrl live --max-battles 3
 
+# Stop a long session after 30 minutes
+showdownrl live --max-battles 50 --max-time 30
+
 # Show move scores while the AI is choosing
 showdownrl live --debug-policy
+
+# Try the trained PPO move selector, falling back to the heuristic if needed
+showdownrl live --policy ppo
+
+# Use a specific PPO checkpoint
+showdownrl live --policy ppo --model-path models/ppo_move_selection_v1.zip
 
 # Do not write local battle stats
 showdownrl live --no-stats
@@ -128,6 +141,7 @@ Generate a local HTML report:
 ```bash
 showdownrl stats --html
 showdownrl stats --open
+showdownrl stats --trend
 ```
 
 Filter the report:
@@ -166,7 +180,11 @@ PS_USERNAME=your_name PS_PASSWORD=your_password showdownrl live
 ```
 
 Battle logs do not store your password. They include local-only battle metadata
-such as result, turns, selected moves, forced switches, errors, and video path.
+such as result, turns, selected moves, forced switches, policy source, rating
+when it can be detected from the page, errors, and video path.
+When `--debug-policy` is used, ShowdownRL also saves local redacted turn-state
+snapshots under the stats directory so you can inspect what the AI saw before
+clicking.
 
 ## Troubleshooting
 
@@ -187,8 +205,8 @@ The repository also contains experimental reinforcement-learning scripts under
 ```bash
 pip install -e ".[rl]"
 python scripts/smoke_test.py
-python scripts/train_ppo.py --timesteps 2048
-python scripts/evaluate_model.py --episodes 100
+python scripts/train_ppo.py --timesteps 2048 --opponent-policy type_aware
+python scripts/evaluate_model.py --episodes 100 --opponent-policy type_aware
 python scripts/generate_ai_stats.py
 PYTHONPATH=. python -m unittest discover -s tests
 ```

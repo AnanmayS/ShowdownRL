@@ -3,13 +3,13 @@
 Evaluate all policies (and optionally a trained PPO model) on SimplePokemonMoveEnv.
 
 Usage:
-    python scripts/evaluate_model.py [--episodes N] [--seed S]
+    python scripts/evaluate_model.py [--episodes N] [--seed S] [--model PATH ...]
 
 Evaluates:
     - RandomPolicy
     - MaxDamagePolicy
     - TypeAwarePolicy
-    - PPOPolicy (if models/ppo_move_selection_v1.zip exists)
+    - PPO models passed with --model, or models/ppo_move_selection_v1.zip if present
 
 Saves results to results/evaluation.csv.
 """
@@ -37,10 +37,35 @@ def parse_args():
     parser.add_argument(
         "--seed", type=int, default=42, help="Random seed (default: 42)"
     )
+    parser.add_argument(
+        "--opponent-policy",
+        choices=["random", "max_damage", "type_aware"],
+        default="random",
+        help="Opponent policy used during evaluation.",
+    )
+    parser.add_argument(
+        "--mechanics",
+        choices=["toy", "typed"],
+        default="toy",
+        help="Environment mechanics used during evaluation.",
+    )
+    parser.add_argument(
+        "--model",
+        action="append",
+        type=Path,
+        default=[],
+        help="PPO model zip to evaluate. Can be passed more than once.",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("results/evaluation.csv"),
+        help="Output CSV path.",
+    )
     return parser.parse_args()
 
 
-def evaluate_policy(env_cls, policy_fn, n_episodes, seed):
+def evaluate_policy(env_cls, policy_fn, n_episodes, seed, opponent_policy, mechanics):
     """Run n_episodes and return stats dict."""
     np.random.seed(seed + hash(policy_fn.__name__) % 10000)
 
@@ -50,7 +75,7 @@ def evaluate_policy(env_cls, policy_fn, n_episodes, seed):
     turns_list = []
 
     for ep in range(n_episodes):
-        env = env_cls(seed=seed + ep)
+        env = env_cls(seed=seed + ep, opponent_policy=opponent_policy, mechanics=mechanics)
         obs, _ = env.reset()
         done = False
         ep_reward = 0.0
@@ -87,45 +112,63 @@ def evaluate_policy(env_cls, policy_fn, n_episodes, seed):
 
 def main():
     args = parse_args()
+    root = Path(__file__).resolve().parent.parent
 
-    print(f"Evaluating policies over {args.episodes} episodes each...\n")
+    print(
+        f"Evaluating policies over {args.episodes} episodes each "
+        f"({args.mechanics} mechanics, {args.opponent_policy} opponent)...\n"
+    )
 
     results = []
 
     # Baseline policies
     for policy_fn in [random_policy, max_damage_policy, type_aware_policy]:
         print(f"  {policy_fn.__name__}...")
-        stats = evaluate_policy(SimplePokemonMoveEnv, policy_fn, args.episodes, args.seed)
+        stats = evaluate_policy(
+            SimplePokemonMoveEnv,
+            policy_fn,
+            args.episodes,
+            args.seed,
+            args.opponent_policy,
+            args.mechanics,
+        )
         results.append(stats)
         print(f"    win_rate={stats['win_rate']:.2%}, avg_reward={stats['average_reward']:.3f}")
 
-    # PPO model (if available)
-    model_path = (
-        Path(__file__).resolve().parent.parent / "models" / "ppo_move_selection_v1.zip"
-    )
-    if model_path.exists():
-        print("\n  PPOPolicy...")
+    model_paths = args.model or [root / "models" / "ppo_move_selection_v1.zip"]
+    for raw_path in model_paths:
+        model_path = raw_path if raw_path.is_absolute() else root / raw_path
+        if not model_path.exists():
+            print(f"\n  PPO model not found at {model_path} — skipping.")
+            continue
+
+        policy_name = model_path.stem
+        print(f"\n  {policy_name}...")
         model = PPO.load(str(model_path))
 
         def ppo_policy(obs):
             action, _ = model.predict(obs, deterministic=True)
             return int(action)
 
-        ppo_policy.__name__ = "ppo_policy"
-        stats = evaluate_policy(SimplePokemonMoveEnv, ppo_policy, args.episodes, args.seed)
+        ppo_policy.__name__ = policy_name
+        stats = evaluate_policy(
+            SimplePokemonMoveEnv,
+            ppo_policy,
+            args.episodes,
+            args.seed,
+            args.opponent_policy,
+            args.mechanics,
+        )
         results.append(stats)
         print(f"    win_rate={stats['win_rate']:.2%}, avg_reward={stats['average_reward']:.3f}")
-    else:
-        print(f"\n  PPO model not found at {model_path} — skipping.")
 
     # Save results
     df = pd.DataFrame(results)
     print("\nEvaluation Results:")
     print(df.to_string(index=False))
 
-    results_dir = Path(__file__).resolve().parent.parent / "results"
-    results_dir.mkdir(parents=True, exist_ok=True)
-    csv_path = results_dir / "evaluation.csv"
+    csv_path = args.output if args.output.is_absolute() else root / args.output
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(csv_path, index=False)
     print(f"\nSaved to {csv_path}")
 

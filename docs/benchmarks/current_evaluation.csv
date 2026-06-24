@@ -1,5 +1,11 @@
-policy,episodes,wins,losses,win_rate,average_reward,average_turns
-random_policy,50,32,18,0.64,0.3305264489291507,6.96
-max_damage_policy,50,37,13,0.74,0.6048812160351291,6.12
-type_aware_policy,50,46,4,0.92,1.1031408304033488,5.16
-ppo_policy,50,34,16,0.68,0.48362269492023996,5.94
+scenario,policy,episodes,wins,losses,win_rate,average_reward,average_turns
+typed_type_aware,random_policy,1000,146,854,0.146,-1.0365897729387747,5.434
+typed_type_aware,max_damage_policy,1000,445,555,0.445,-0.29414923610184257,5.236
+typed_type_aware,type_aware_policy,1000,747,253,0.747,0.49757818555590966,5.084
+typed_type_aware,ppo_move_selection_v1,1000,404,596,0.404,-0.38687337473564687,5.282
+typed_type_aware,ppo_move_selection_v2_typed,1000,717,283,0.717,0.4216114712591582,5.11
+toy_random,random_policy,1000,593,407,0.593,0.1888410019088778,6.91
+toy_random,max_damage_policy,1000,729,271,0.729,0.5886828774750147,6.047
+toy_random,type_aware_policy,1000,933,67,0.933,1.132236397299961,5.286
+toy_random,ppo_move_selection_v1,1000,729,271,0.729,0.5684614466766804,6.177
+toy_random,ppo_move_selection_v2_typed,1000,923,77,0.923,1.1050685749111608,5.334

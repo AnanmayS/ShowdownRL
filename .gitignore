@@ -10,6 +10,7 @@ build/
 dist/
 .pytest_cache/
 models/*.zip
+!models/ppo_move_selection_v2_typed.zip
 results/
 *.webm
 *.mp4

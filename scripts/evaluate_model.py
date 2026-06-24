@@ -16,6 +16,7 @@ Saves results to results/evaluation.csv.
 
 import argparse
 import hashlib
+import subprocess
 import sys
 from pathlib import Path
 
@@ -27,6 +28,18 @@ from stable_baselines3 import PPO
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from showdownrl.simple_env import SimplePokemonMoveEnv
 from showdownrl.policies import random_policy, max_damage_policy, type_aware_policy
+
+
+def git_sha(root: Path) -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=root,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except Exception:
+        return "unknown"
 
 
 def parse_args():
@@ -134,6 +147,8 @@ def evaluate_policy(env_cls, policy_fn, n_episodes, seed, opponent_policy, mecha
 def main():
     args = parse_args()
     root = Path(__file__).resolve().parent.parent
+    scenario = f"{args.mechanics}_{args.opponent_policy}_seed{args.seed}"
+    current_git_sha = git_sha(root)
 
     print(
         f"Evaluating policies over {args.episodes} episodes each "
@@ -153,6 +168,17 @@ def main():
             args.opponent_policy,
             args.mechanics,
             "rich" if args.observation_mode == "rich" else "simple",
+        )
+        stats.update(
+            {
+                "scenario": scenario,
+                "seed": args.seed,
+                "mechanics": args.mechanics,
+                "opponent_policy": args.opponent_policy,
+                "observation_mode": "rich" if args.observation_mode == "rich" else "simple",
+                "model_path": "",
+                "git_sha": current_git_sha,
+            }
         )
         results.append(stats)
         print(f"    win_rate={stats['win_rate']:.2%}, avg_reward={stats['average_reward']:.3f}")
@@ -183,6 +209,17 @@ def main():
             args.opponent_policy,
             args.mechanics,
             model_observation_mode if args.observation_mode == "auto" else args.observation_mode,
+        )
+        stats.update(
+            {
+                "scenario": scenario,
+                "seed": args.seed,
+                "mechanics": args.mechanics,
+                "opponent_policy": args.opponent_policy,
+                "observation_mode": model_observation_mode if args.observation_mode == "auto" else args.observation_mode,
+                "model_path": str(model_path.relative_to(root) if model_path.is_relative_to(root) else model_path),
+                "git_sha": current_git_sha,
+            }
         )
         results.append(stats)
         print(f"    win_rate={stats['win_rate']:.2%}, avg_reward={stats['average_reward']:.3f}")

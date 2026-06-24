@@ -7,13 +7,17 @@ from pathlib import Path
 
 from showdownrl.stats import (
     append_battle_record,
+    export_rows,
     filter_records,
+    grouped_summary_text,
     load_battle_records,
     parse_since,
     summarize_records,
     terminal_summary,
     trend_summary,
+    write_csv_export,
     write_html_report,
+    write_json_export,
 )
 
 
@@ -104,8 +108,47 @@ class StatsTests(unittest.TestCase):
 
             self.assertIn("ShowdownRL Stats", html)
             self.assertIn("Flamethrower", html)
+            self.assertIn("Policy Breakdown", html)
             self.assertNotIn("should-not-appear", html)
             self.assertTrue(report.exists())
+
+    def test_grouping_and_exports_exclude_credentials(self) -> None:
+        records = [
+            {
+                "started_at": "2026-06-23T10:00:00+00:00",
+                "result": "win",
+                "turns": 5,
+                "format": "Random Battle",
+                "policy": "ppo",
+                "model_path": "models/ppo_move_selection_v3_rich.zip",
+                "selected_moves": [{"name": "Flamethrower"}],
+                "selected_switches": [{"name": "Gyarados"}],
+                "password": "should-not-appear",
+            },
+            {
+                "started_at": "2026-06-24T10:00:00+00:00",
+                "result": "error",
+                "turns": 1,
+                "format": "Random Battle",
+                "policy": "heuristic",
+                "errors": ["battle button was not visible"],
+            },
+        ]
+
+        grouped = grouped_summary_text(records, "policy")
+        rows = export_rows(records)
+
+        self.assertIn("ppo: 1-0", grouped)
+        self.assertEqual(rows[0]["selected_switches"], "Gyarados")
+        self.assertNotIn("password", rows[0])
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out_dir = Path(tmp)
+            csv_path = write_csv_export(records, out_dir / "stats.csv")
+            json_path = write_json_export(records, out_dir / "stats.json")
+
+            self.assertIn("Flamethrower", csv_path.read_text(encoding="utf-8"))
+            self.assertNotIn("should-not-appear", json_path.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

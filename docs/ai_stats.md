@@ -7,18 +7,28 @@ This report summarizes the published benchmark in
 
 ## Current Result
 
-The trained PPO v2 policy won 717 of 1000 episodes (71.7%) on the typed
-mechanics benchmark with an average reward of 0.422. On the same benchmark, the
-older PPO v1 checkpoint won 404 of 1000 episodes (40.4%).
+The trained PPO v3 policy uses a richer 46-feature observation that includes
+per-move expected damage, STAB, type advantage, finish ranges, recovery, setup,
+and status flags. On rich mechanics against the type-aware opponent, v3 beat the
+typed v2 checkpoint on two 1000-episode seeds:
 
-The strongest policy in this run was still **Type aware** at 74.7% win rate.
-That means the trained model is now much better than the previous checkpoint,
-but the next model target is to beat the type-aware baseline consistently.
+- Seed 42: v3 won 597 of 1000 episodes (59.7%) versus 57.8% for v2.
+- Seed 99: v3 won 585 of 1000 episodes (58.5%) versus 57.0% for v2.
+
+The strongest policy is still the hand-coded **Type aware** baseline, which won
+60.8% on seed 42 and 59.6% on seed 99. The next model target is to beat that
+baseline consistently.
 
 ## Benchmark Table
 
 | Scenario | Policy | Episodes | Record | Win rate | Avg reward | Avg turns |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Rich/type-aware seed 42 | Type aware | 1000 | 608-392 | 60.8% | +0.237 | 6.67 |
+| Rich/type-aware seed 42 | Trained PPO v3 | 1000 | 597-403 | 59.7% | +0.205 | 7.76 |
+| Rich/type-aware seed 42 | Trained PPO v2 | 1000 | 578-422 | 57.8% | +0.165 | 6.64 |
+| Rich/type-aware seed 99 | Type aware | 1000 | 596-404 | 59.6% | +0.213 | 6.70 |
+| Rich/type-aware seed 99 | Trained PPO v3 | 1000 | 585-415 | 58.5% | +0.182 | 7.76 |
+| Rich/type-aware seed 99 | Trained PPO v2 | 1000 | 570-430 | 57.0% | +0.147 | 6.67 |
 | Typed/type-aware | Type aware | 1000 | 747-253 | 74.7% | +0.498 | 5.08 |
 | Typed/type-aware | Trained PPO v2 | 1000 | 717-283 | 71.7% | +0.422 | 5.11 |
 | Typed/type-aware | Trained PPO v1 | 1000 | 404-596 | 40.4% | -0.387 | 5.28 |
@@ -41,11 +51,14 @@ but the next model target is to beat the type-aware baseline consistently.
 ```bash
 pip install -e ".[rl]"
 python scripts/train_ppo.py --timesteps 100000 --seed 42 --mechanics typed --opponent-policy type_aware --output models/ppo_move_selection_v2_typed.zip
+python scripts/train_ppo.py --timesteps 300000 --seed 45 --mechanics rich --observation-mode rich --opponent-policy type_aware --output models/ppo_move_selection_v3_rich.zip
 python scripts/evaluate_model.py --episodes 1000 --seed 42 --mechanics typed --opponent-policy type_aware --model models/ppo_move_selection_v1.zip --model models/ppo_move_selection_v2_typed.zip --output results/evaluation_v1_vs_v2_typed.csv
 python scripts/evaluate_model.py --episodes 1000 --seed 42 --mechanics toy --opponent-policy random --model models/ppo_move_selection_v1.zip --model models/ppo_move_selection_v2_typed.zip --output results/evaluation_v1_vs_v2_toy.csv
+python scripts/evaluate_model.py --episodes 1000 --seed 42 --mechanics rich --opponent-policy type_aware --model models/ppo_move_selection_v2_typed.zip --model models/ppo_move_selection_v3_rich.zip --output results/evaluation_v2_vs_v3_rich_seed42.csv
+python scripts/evaluate_model.py --episodes 1000 --seed 99 --mechanics rich --opponent-policy type_aware --model models/ppo_move_selection_v2_typed.zip --model models/ppo_move_selection_v3_rich.zip --output results/evaluation_v2_vs_v3_rich_seed99.csv
 ```
 
-Model artifact: `ppo_move_selection_v2_typed.zip (0.2 MB, local artifact)`  
+Model artifacts: `ppo_move_selection_v2_typed.zip`, `ppo_move_selection_v3_rich.zip`  
 Evaluation CSV timestamp: `2026-06-24`
 
 These numbers benchmark the experimental simulator policy. The live browser

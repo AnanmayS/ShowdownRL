@@ -7,15 +7,29 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from showdownrl.ai import parse_move_power, ranked_moves
+from showdownrl.ai import (
+    RECOVERY_MOVES,
+    SETUP_MOVES,
+    STATUS_MOVES,
+    normalize_move_name,
+    parse_move_power,
+    ranked_moves,
+)
 
 MODEL_FILENAME = "ppo_move_selection_v2_typed.zip"
+RICH_MODEL_FILENAME = "ppo_move_selection_v3_rich.zip"
 LEGACY_MODEL_FILENAME = "ppo_move_selection_v1.zip"
 DEFAULT_MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / MODEL_FILENAME
+SIMPLE_OBS_SIZE = 14
+RICH_FEATURES_PER_MOVE = 8
+RICH_OBS_SIZE = SIMPLE_OBS_SIZE + 4 * RICH_FEATURES_PER_MOVE
 
 
 def default_model_path() -> Path:
     candidates = [
+        Path(__file__).resolve().parent.parent / "models" / RICH_MODEL_FILENAME,
+        Path.cwd() / "models" / RICH_MODEL_FILENAME,
+        Path(__file__).resolve().parent / "models" / RICH_MODEL_FILENAME,
         DEFAULT_MODEL_PATH,
         Path.cwd() / "models" / MODEL_FILENAME,
         Path(__file__).resolve().parent / "models" / MODEL_FILENAME,
@@ -152,6 +166,41 @@ def turn_state_to_observation(
     return observation
 
 
+def turn_state_to_rich_observation(
+    turn_state: dict[str, Any] | None,
+    moves: list[dict[str, Any]],
+) -> list[float]:
+    """Project a live turn-state payload into the rich v3 PPO observation."""
+    state = turn_state or {}
+    observation = turn_state_to_observation(state, moves) + [0.0] * (RICH_OBS_SIZE - SIMPLE_OBS_SIZE)
+    opponent_hp = _hp_fraction(state.get("opponent"))
+
+    for index in range(4):
+        if index >= len(moves):
+            continue
+        move = moves[index]
+        rich_base = SIMPLE_OBS_SIZE + index * RICH_FEATURES_PER_MOVE
+        power = max(0.0, min(1.0, parse_move_power(move) / 100.0))
+        accuracy = _accuracy_fraction(move)
+        multiplier = damage_multiplier(move, state)
+        expected_damage = power * accuracy * multiplier * 0.25
+        move_type = str(move.get("type") or "").strip().lower()
+        active_types = _normalized_types((state.get("active") or {}).get("types"))
+        effectiveness = type_effectiveness(move, state.get("opponent"))
+        name = normalize_move_name(str(move.get("name") or ""))
+        category = str(move.get("category") or "").strip().lower()
+
+        observation[rich_base] = min(4.0, power * accuracy * multiplier)
+        observation[rich_base + 1] = 1.0 if move_type and move_type in active_types else 0.0
+        observation[rich_base + 2] = 1.0 if effectiveness > 1.0 else 0.0
+        observation[rich_base + 3] = 1.0 if effectiveness < 1.0 else 0.0
+        observation[rich_base + 4] = 1.0 if expected_damage >= opponent_hp else 0.0
+        observation[rich_base + 5] = 1.0 if name in RECOVERY_MOVES else 0.0
+        observation[rich_base + 6] = 1.0 if name in SETUP_MOVES else 0.0
+        observation[rich_base + 7] = 1.0 if category == "status" or name in STATUS_MOVES else 0.0
+    return observation
+
+
 def _rank_with_selected_first(
     moves: list[dict[str, Any]],
     turn_state: dict[str, Any] | None,
@@ -173,6 +222,8 @@ class PPOMovePolicy:
         self.model_path = model_path or default_model_path()
         if model is not None:
             self.model = model
+            model_shape = getattr(getattr(model, "observation_space", None), "shape", ())
+            self.observation_size = int(model_shape[0]) if model_shape else RICH_OBS_SIZE
             return
 
         if not self.model_path.exists():
@@ -183,13 +234,17 @@ class PPOMovePolicy:
             raise PolicyLoadError("Install RL dependencies with `pip install -e '.[rl]'` to use --policy ppo.") from exc
 
         self.model = PPO.load(str(self.model_path))
+        self.observation_size = int(getattr(self.model.observation_space, "shape", (SIMPLE_OBS_SIZE,))[0])
 
     def choose(self, moves: list[dict[str, Any]], turn_state: dict[str, Any] | None) -> PolicyChoice:
         fallback = ranked_moves(moves, turn_state)
         if not moves:
             return PolicyChoice(fallback, "heuristic", "no available moves")
 
-        observation = turn_state_to_observation(turn_state, moves)
+        if getattr(self, "observation_size", SIMPLE_OBS_SIZE) > SIMPLE_OBS_SIZE:
+            observation = turn_state_to_rich_observation(turn_state, moves)
+        else:
+            observation = turn_state_to_observation(turn_state, moves)
         try:
             try:
                 import numpy as np

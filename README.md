@@ -8,16 +8,23 @@ save a WebM recording of the battle.
 
 ## Current AI Benchmark
 
-The current trained simulator policy is `ppo_move_selection_v2_typed.zip`. It
-was trained with typed mechanics, real type-chart multipliers, STAB, and a
-type-aware opponent. In the latest 1000-episode typed benchmark, v2 won
-**717 of 1000 episodes** for a **71.7% win rate**, up from **40.4%** for v1 on
-the same benchmark.
+The default trained simulator policy is `ppo_move_selection_v3_rich.zip`. It
+extends the original 14-feature PPO input with per-move context for expected
+damage, STAB, type advantage, finish ranges, recovery, setup, and status moves.
+Across two 1000-episode rich-mechanics benchmarks, v3 beat the typed v2
+checkpoint on both seeds while remaining slightly behind the hand-coded
+type-aware baseline.
 
 ![ShowdownRL policy benchmark](docs/assets/ai_policy_comparison.png)
 
 | Scenario | Policy | Episodes | Record | Win rate | Avg reward | Avg turns |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Rich/type-aware seed 42 | Type aware | 1000 | 608-392 | 60.8% | +0.237 | 6.67 |
+| Rich/type-aware seed 42 | Trained PPO v3 | 1000 | 597-403 | 59.7% | +0.205 | 7.76 |
+| Rich/type-aware seed 42 | Trained PPO v2 | 1000 | 578-422 | 57.8% | +0.165 | 6.64 |
+| Rich/type-aware seed 99 | Type aware | 1000 | 596-404 | 59.6% | +0.213 | 6.70 |
+| Rich/type-aware seed 99 | Trained PPO v3 | 1000 | 585-415 | 58.5% | +0.182 | 7.76 |
+| Rich/type-aware seed 99 | Trained PPO v2 | 1000 | 570-430 | 57.0% | +0.147 | 6.67 |
 | Typed/type-aware | Type aware | 1000 | 747-253 | 74.7% | +0.498 | 5.08 |
 | Typed/type-aware | Trained PPO v2 | 1000 | 717-283 | 71.7% | +0.422 | 5.11 |
 | Typed/type-aware | Trained PPO v1 | 1000 | 404-596 | 40.4% | -0.387 | 5.28 |
@@ -25,7 +32,7 @@ the same benchmark.
 | Toy/random | Trained PPO v2 | 1000 | 923-77 | 92.3% | +1.105 | 5.33 |
 | Toy/random | Trained PPO v1 | 1000 | 729-271 | 72.9% | +0.568 | 6.18 |
 
-The type-aware baseline is still slightly stronger on the typed benchmark, so
+The type-aware baseline is still slightly stronger on the richer benchmark, so
 the next training goal is to beat that baseline consistently. See
 [docs/benchmarks/current_evaluation.csv](docs/benchmarks/current_evaluation.csv)
 for the side-by-side benchmark data.
@@ -116,7 +123,7 @@ showdownrl live --debug-policy
 showdownrl live --policy ppo
 
 # Use a specific PPO checkpoint
-showdownrl live --policy ppo --model-path models/ppo_move_selection_v1.zip
+showdownrl live --policy ppo --model-path models/ppo_move_selection_v3_rich.zip
 
 # Do not write local battle stats
 showdownrl live --no-stats

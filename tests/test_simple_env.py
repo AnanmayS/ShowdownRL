@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 try:
+    from showdownrl.simple_env import RICH_OBS_SIZE
     from showdownrl.simple_env import SimplePokemonMoveEnv
 except ImportError as exc:  # pragma: no cover - depends on optional rl extras
     SimplePokemonMoveEnv = None
@@ -33,6 +34,19 @@ class SimpleEnvTests(unittest.TestCase):
         self.assertTrue(info["opponent_types"])
         self.assertEqual(len(env.moves), 4)
         self.assertTrue(any(obs[2 + index * 3 + 2] != 1.0 for index in range(4)))
+
+    def test_rich_observation_includes_support_move_flags(self) -> None:
+        for seed in range(1, 20):
+            env = SimplePokemonMoveEnv(mechanics="rich", observation_mode="rich", seed=seed)
+            obs, info = env.reset()
+            if any(
+                obs[14 + index * 8 + 5] or obs[14 + index * 8 + 6] or obs[14 + index * 8 + 7]
+                for index in range(4)
+            ):
+                self.assertEqual(info["observation_mode"], "rich")
+                self.assertEqual(len(obs), RICH_OBS_SIZE)
+                return
+        self.fail("rich mechanics did not generate a support move in deterministic sample")
 
 
 if __name__ == "__main__":

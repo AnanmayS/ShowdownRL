@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from showdownrl.policy_bridge import PPOMovePolicy, turn_state_to_observation, type_effectiveness
+from showdownrl.policy_bridge import RICH_OBS_SIZE, PPOMovePolicy, turn_state_to_observation, turn_state_to_rich_observation, type_effectiveness
 
 
 class FakeModel:
@@ -39,6 +39,24 @@ class PolicyBridgeTests(unittest.TestCase):
     def test_type_effectiveness_prefers_showdown_button_text(self) -> None:
         self.assertEqual(type_effectiveness({"type": "Ground", "text": "Doesn't affect the target"}, {}), 0.0)
         self.assertEqual(type_effectiveness({"type": "Fire", "text": "Super effective"}, {}), 2.0)
+
+    def test_rich_observation_adds_move_context(self) -> None:
+        obs = turn_state_to_rich_observation(
+            {
+                "active": {"hp_percent": 25, "types": ["Water"]},
+                "opponent": {"hp_percent": 20, "types": ["Fire"]},
+            },
+            [
+                {"name": "Surf", "type": "Water", "category": "Special", "text": "Power 90 Accuracy 100"},
+                {"name": "Recover", "type": "Normal", "category": "Status", "text": "Recover"},
+            ],
+        )
+
+        self.assertEqual(len(obs), RICH_OBS_SIZE)
+        self.assertEqual(obs[14 + 1], 1.0)  # STAB
+        self.assertEqual(obs[14 + 2], 1.0)  # super effective
+        self.assertEqual(obs[14 + 4], 1.0)  # expected damage can finish
+        self.assertEqual(obs[14 + 8 + 5], 1.0)  # recovery flag on second move
 
     def test_ppo_policy_selects_predicted_available_move(self) -> None:
         policy = PPOMovePolicy(model=FakeModel(1))

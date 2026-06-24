@@ -36,9 +36,15 @@ def parse_args():
     )
     parser.add_argument(
         "--mechanics",
-        choices=["toy", "typed"],
+        choices=["toy", "typed", "rich"],
         default="typed",
         help="Environment mechanics used during training.",
+    )
+    parser.add_argument(
+        "--observation-mode",
+        choices=["simple", "rich"],
+        default="simple",
+        help="Observation vector used during training.",
     )
     parser.add_argument(
         "--output",
@@ -54,7 +60,12 @@ def main():
 
     print(f"Training PPO for {args.timesteps} timesteps...")
 
-    env = SimplePokemonMoveEnv(seed=args.seed, opponent_policy=args.opponent_policy, mechanics=args.mechanics)
+    env = SimplePokemonMoveEnv(
+        seed=args.seed,
+        opponent_policy=args.opponent_policy,
+        mechanics=args.mechanics,
+        observation_mode=args.observation_mode,
+    )
     model = PPO("MlpPolicy", env, verbose=1, seed=args.seed)
 
     model.learn(total_timesteps=args.timesteps)

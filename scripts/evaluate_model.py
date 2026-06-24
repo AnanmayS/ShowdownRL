@@ -15,6 +15,7 @@ Saves results to results/evaluation.csv.
 """
 
 import argparse
+import hashlib
 import sys
 from pathlib import Path
 
@@ -45,9 +46,15 @@ def parse_args():
     )
     parser.add_argument(
         "--mechanics",
-        choices=["toy", "typed"],
+        choices=["toy", "typed", "rich"],
         default="toy",
         help="Environment mechanics used during evaluation.",
+    )
+    parser.add_argument(
+        "--observation-mode",
+        choices=["simple", "rich", "auto"],
+        default="auto",
+        help="Observation vector for built-in policies; PPO models use their trained shape when auto.",
     )
     parser.add_argument(
         "--model",
@@ -65,9 +72,10 @@ def parse_args():
     return parser.parse_args()
 
 
-def evaluate_policy(env_cls, policy_fn, n_episodes, seed, opponent_policy, mechanics):
+def evaluate_policy(env_cls, policy_fn, n_episodes, seed, opponent_policy, mechanics, observation_mode):
     """Run n_episodes and return stats dict."""
-    np.random.seed(seed + hash(policy_fn.__name__) % 10000)
+    policy_seed = int(hashlib.sha256(policy_fn.__name__.encode()).hexdigest()[:8], 16)
+    np.random.seed(seed + policy_seed % 10000)
 
     wins = 0
     losses = 0
@@ -75,7 +83,12 @@ def evaluate_policy(env_cls, policy_fn, n_episodes, seed, opponent_policy, mecha
     turns_list = []
 
     for ep in range(n_episodes):
-        env = env_cls(seed=seed + ep, opponent_policy=opponent_policy, mechanics=mechanics)
+        env = env_cls(
+            seed=seed + ep,
+            opponent_policy=opponent_policy,
+            mechanics=mechanics,
+            observation_mode=observation_mode,
+        )
         obs, _ = env.reset()
         done = False
         ep_reward = 0.0
@@ -131,6 +144,7 @@ def main():
             args.seed,
             args.opponent_policy,
             args.mechanics,
+            "rich" if args.observation_mode == "rich" else "simple",
         )
         results.append(stats)
         print(f"    win_rate={stats['win_rate']:.2%}, avg_reward={stats['average_reward']:.3f}")
@@ -145,6 +159,8 @@ def main():
         policy_name = model_path.stem
         print(f"\n  {policy_name}...")
         model = PPO.load(str(model_path))
+        model_shape = getattr(model.observation_space, "shape", ())
+        model_observation_mode = "rich" if model_shape and int(model_shape[0]) > 14 else "simple"
 
         def ppo_policy(obs):
             action, _ = model.predict(obs, deterministic=True)
@@ -158,6 +174,7 @@ def main():
             args.seed,
             args.opponent_policy,
             args.mechanics,
+            model_observation_mode if args.observation_mode == "auto" else args.observation_mode,
         )
         results.append(stats)
         print(f"    win_rate={stats['win_rate']:.2%}, avg_reward={stats['average_reward']:.3f}")

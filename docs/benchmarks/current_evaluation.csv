@@ -1,4 +1,10 @@
 scenario,policy,episodes,wins,losses,win_rate,average_reward,average_turns
+rich_type_aware_seed42,type_aware_policy,1000,608,392,0.608,0.237012,6.667
+rich_type_aware_seed42,ppo_move_selection_v2_typed,1000,578,422,0.578,0.165077,6.644
+rich_type_aware_seed42,ppo_move_selection_v3_rich,1000,597,403,0.597,0.204694,7.758
+rich_type_aware_seed99,type_aware_policy,1000,596,404,0.596,0.213219,6.695
+rich_type_aware_seed99,ppo_move_selection_v2_typed,1000,570,430,0.57,0.147335,6.673
+rich_type_aware_seed99,ppo_move_selection_v3_rich,1000,585,415,0.585,0.18238,7.756
 typed_type_aware,random_policy,1000,146,854,0.146,-1.0365897729387747,5.434
 typed_type_aware,max_damage_policy,1000,445,555,0.445,-0.29414923610184257,5.236
 typed_type_aware,type_aware_policy,1000,747,253,0.747,0.49757818555590966,5.084

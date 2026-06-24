@@ -40,7 +40,7 @@ def parse_args():
     )
     parser.add_argument(
         "--opponent-policy",
-        choices=["random", "max_damage", "type_aware"],
+        choices=["random", "max_damage", "type_aware", "mixed"],
         default="random",
         help="Opponent policy used during evaluation.",
     )
@@ -79,6 +79,7 @@ def evaluate_policy(env_cls, policy_fn, n_episodes, seed, opponent_policy, mecha
 
     wins = 0
     losses = 0
+    draws = 0
     rewards = []
     turns_list = []
 
@@ -93,10 +94,11 @@ def evaluate_policy(env_cls, policy_fn, n_episodes, seed, opponent_policy, mecha
         done = False
         ep_reward = 0.0
         turns = 0
+        final_info = {}
 
         while not done:
             action = policy_fn(obs)
-            obs, reward, terminated, truncated, _ = env.step(action)
+            obs, reward, terminated, truncated, final_info = env.step(action)
             ep_reward += reward
             turns += 1
             done = terminated or truncated
@@ -104,10 +106,14 @@ def evaluate_policy(env_cls, policy_fn, n_episodes, seed, opponent_policy, mecha
         rewards.append(ep_reward)
         turns_list.append(turns)
 
-        if ep_reward > 0:
+        opponent_hp = float(final_info.get("opponent_hp", 0.0))
+        own_hp = float(final_info.get("own_hp", 0.0))
+        if opponent_hp <= 0.0 and own_hp > 0.0:
             wins += 1
-        elif ep_reward < 0:
+        elif own_hp <= 0.0 and opponent_hp > 0.0:
             losses += 1
+        else:
+            draws += 1
 
         env.close()
 
@@ -117,7 +123,9 @@ def evaluate_policy(env_cls, policy_fn, n_episodes, seed, opponent_policy, mecha
         "episodes": total,
         "wins": wins,
         "losses": losses,
+        "draws": draws,
         "win_rate": wins / total,
+        "non_loss_rate": (wins + draws) / total,
         "average_reward": np.mean(rewards),
         "average_turns": np.mean(turns_list),
     }

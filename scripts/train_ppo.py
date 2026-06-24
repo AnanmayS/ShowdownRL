@@ -30,7 +30,7 @@ def parse_args():
     )
     parser.add_argument(
         "--opponent-policy",
-        choices=["random", "max_damage", "type_aware"],
+        choices=["random", "max_damage", "type_aware", "mixed"],
         default="random",
         help="Opponent policy used during training.",
     )

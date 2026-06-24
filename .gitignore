@@ -12,6 +12,7 @@ dist/
 models/*.zip
 !models/ppo_move_selection_v2_typed.zip
 !models/ppo_move_selection_v3_rich.zip
+!models/ppo_move_selection_v4_rich.zip
 results/
 *.webm
 *.mp4

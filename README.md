@@ -1,5 +1,7 @@
 # ShowdownRL
 
+[![CI](https://github.com/AnanmayS/ShowdownRL/actions/workflows/ci.yml/badge.svg)](https://github.com/AnanmayS/ShowdownRL/actions/workflows/ci.yml)
+
 Watch an AI play Pokemon Showdown in a visible browser.
 
 ShowdownRL opens Pokemon Showdown, signs in with your account or a guest name,
@@ -11,31 +13,22 @@ save a WebM recording of the battle.
 The default trained simulator policy is `ppo_move_selection_v3_rich.zip`. It
 extends the original 14-feature PPO input with per-move context for expected
 damage, STAB, type advantage, finish ranges, recovery, setup, and status moves.
-Across two 1000-episode rich-mechanics benchmarks, v3 beat the typed v2
-checkpoint on both seeds while remaining slightly behind the hand-coded
-type-aware baseline.
-
-![ShowdownRL policy benchmark](docs/assets/ai_policy_comparison.png)
+The v4 experiment added mixed-opponent training and anti-stall reward shaping,
+but v3 still has the best KO win rate on the current rich-mechanics benchmark.
 
 | Scenario | Policy | Episodes | Record | Win rate | Avg reward | Avg turns |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| Rich/type-aware seed 42 | Type aware | 1000 | 608-392 | 60.8% | +0.237 | 6.67 |
-| Rich/type-aware seed 42 | Trained PPO v3 | 1000 | 597-403 | 59.7% | +0.205 | 7.76 |
-| Rich/type-aware seed 42 | Trained PPO v2 | 1000 | 578-422 | 57.8% | +0.165 | 6.64 |
-| Rich/type-aware seed 99 | Type aware | 1000 | 596-404 | 59.6% | +0.213 | 6.70 |
-| Rich/type-aware seed 99 | Trained PPO v3 | 1000 | 585-415 | 58.5% | +0.182 | 7.76 |
-| Rich/type-aware seed 99 | Trained PPO v2 | 1000 | 570-430 | 57.0% | +0.147 | 6.67 |
-| Typed/type-aware | Type aware | 1000 | 747-253 | 74.7% | +0.498 | 5.08 |
-| Typed/type-aware | Trained PPO v2 | 1000 | 717-283 | 71.7% | +0.422 | 5.11 |
-| Typed/type-aware | Trained PPO v1 | 1000 | 404-596 | 40.4% | -0.387 | 5.28 |
-| Toy/random | Type aware | 1000 | 933-67 | 93.3% | +1.132 | 5.29 |
-| Toy/random | Trained PPO v2 | 1000 | 923-77 | 92.3% | +1.105 | 5.33 |
-| Toy/random | Trained PPO v1 | 1000 | 729-271 | 72.9% | +0.568 | 6.18 |
+| Rich/type-aware seed 42 | Trained PPO v3 | 1000 | 246-410-344 | 24.6% | +0.182 | 7.76 |
+| Rich/type-aware seed 42 | Type aware | 1000 | 236-398-366 | 23.6% | +0.304 | 6.67 |
+| Rich/type-aware seed 42 | Experimental PPO v4 | 1000 | 233-426-341 | 23.3% | +0.193 | 6.92 |
+| Rich/type-aware seed 99 | Trained PPO v3 | 1000 | 240-421-339 | 24.0% | +0.159 | 7.76 |
+| Rich/type-aware seed 99 | Type aware | 1000 | 228-409-363 | 22.8% | +0.277 | 6.70 |
+| Rich/type-aware seed 99 | Experimental PPO v4 | 1000 | 225-436-339 | 22.5% | +0.168 | 6.95 |
 
-The type-aware baseline is still slightly stronger on the richer benchmark, so
-the next training goal is to beat that baseline consistently. See
+Records are shown as wins-losses-draws. See
 [docs/benchmarks/current_evaluation.csv](docs/benchmarks/current_evaluation.csv)
-for the side-by-side benchmark data.
+and [docs/model_leaderboard.md](docs/model_leaderboard.md) for the side-by-side
+benchmark data.
 
 ## Install
 

@@ -73,6 +73,7 @@ class SimplePokemonMoveEnv(gymnasium.Env):
         self.opponent_types = []
         self.own_attack_boost = 1.0
         self.opponent_attack_boost = 1.0
+        self.current_opponent_policy = opponent_policy
         self.turn = 0
 
     def _sample_types(self) -> list[str]:
@@ -177,9 +178,10 @@ class SimplePokemonMoveEnv(gymnasium.Env):
         }
 
     def _opponent_action(self) -> int:
-        if self.opponent_policy == "max_damage":
+        policy = self.current_opponent_policy
+        if policy == "max_damage":
             return int(np.argmax([self._move_values(move)[0] for move in self.moves]))
-        if self.opponent_policy == "type_aware":
+        if policy == "type_aware":
             scores = []
             for move in self.moves:
                 bp, acc, multiplier, _, _, role = self._move_values(move)
@@ -201,6 +203,15 @@ class SimplePokemonMoveEnv(gymnasium.Env):
         self.opponent_hp = 1.0
         self.own_attack_boost = 1.0
         self.opponent_attack_boost = 1.0
+        if self.opponent_policy == "mixed":
+            self.current_opponent_policy = str(
+                self.rng.choice(
+                    ["random", "max_damage", "type_aware"],
+                    p=[0.15, 0.25, 0.60],
+                )
+            )
+        else:
+            self.current_opponent_policy = self.opponent_policy
         self.moves = self._generate_moves()
         self.turn = 0
 
@@ -239,6 +250,10 @@ class SimplePokemonMoveEnv(gymnasium.Env):
 
         prev_own = self.own_hp
         prev_opp = self.opponent_hp
+        prev_own_boost = self.own_attack_boost
+        prev_opp_boost = self.opponent_attack_boost
+        bp, acc, multiplier, _, _, role = self._move_values(self.moves[action])
+        expected_damage = bp * acc * multiplier * prev_own_boost * 0.25
 
         self._apply_action(action, is_own=True)
 
@@ -249,7 +264,24 @@ class SimplePokemonMoveEnv(gymnasium.Env):
         # --- Reward ---
         opp_delta = max(0.0, prev_opp - self.opponent_hp)
         own_delta = max(0.0, prev_own - self.own_hp)
-        reward = opp_delta - own_delta
+        reward = opp_delta - own_delta - 0.01
+        if role == ROLE_ATTACK and expected_damage >= prev_opp:
+            reward += 0.18
+        elif role == ROLE_RECOVER:
+            if prev_own <= 0.55:
+                reward += min(1.0 - prev_own, 0.35) * 0.18
+            else:
+                reward -= 0.12
+        elif role == ROLE_SETUP:
+            if prev_own >= 0.45 and prev_opp >= 0.35 and prev_own_boost < 1.8:
+                reward += 0.03
+            else:
+                reward -= 0.10
+        elif role == ROLE_STATUS:
+            if prev_opp >= 0.35 and prev_opp_boost > 0.45:
+                reward += 0.02
+            else:
+                reward -= 0.08
 
         # --- Terminal conditions ---
         terminated = False
@@ -262,6 +294,8 @@ class SimplePokemonMoveEnv(gymnasium.Env):
 
         self.turn += 1
         truncated = self.turn >= self.max_turns
+        if truncated and not terminated:
+            reward -= 0.75
 
         return self._get_obs(), reward, terminated, truncated, self._get_info()
 

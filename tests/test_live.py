@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from showdownrl.live import LiveOptions, debug_turn_snapshot, infer_result
+from showdownrl.live import LiveOptions, debug_turn_snapshot, infer_result, switch_options_signature
 
 
 class LiveResultTests(unittest.TestCase):
@@ -38,6 +38,18 @@ class LiveResultTests(unittest.TestCase):
         self.assertNotIn("username", snapshot)
         self.assertNotIn("password", snapshot)
         self.assertNotIn("secret-password", repr(snapshot))
+
+    def test_switch_options_signature_is_stable_for_same_menu(self) -> None:
+        options = [
+            {"index": 0, "name": "Pikachu"},
+            {"index": 1, "name": "Charizard"},
+        ]
+
+        self.assertEqual(
+            switch_options_signature(options),
+            switch_options_signature([{"text": "Pikachu"}, {"text": "Charizard"}]),
+        )
+        self.assertEqual(switch_options_signature([], fallback_count=2), ("count:2",))
 
 
 if __name__ == "__main__":

@@ -475,6 +475,17 @@ def debug_turn_snapshot(
     }
 
 
+def switch_options_signature(switch_options: list[dict[str, Any]] | None, fallback_count: int = 0) -> tuple[str, ...]:
+    if switch_options:
+        return tuple(
+            str(option.get("name") or option.get("text") or option.get("index") or index)
+            for index, option in enumerate(switch_options)
+        )
+    if fallback_count:
+        return (f"count:{fallback_count}",)
+    return ()
+
+
 async def run_live(options: LiveOptions) -> int:
     record_dir = options.record_dir or default_record_dir()
     if options.record:
@@ -607,6 +618,7 @@ async def run_live(options: LiveOptions) -> int:
                 visible_result: str | None = None
                 stopped_by_time = False
                 last_forced_switch_at = 0.0
+                last_forced_switch_signature: tuple[str, ...] = ()
                 for turn in range(1, options.max_turns + 1):
                     if deadline is not None and asyncio.get_running_loop().time() >= deadline:
                         stopped_by_time = True
@@ -622,6 +634,7 @@ async def run_live(options: LiveOptions) -> int:
                     turn_state = await page.evaluate(GET_TURN_STATE)
                     moves = turn_state.get("available_moves") or await page.evaluate(GET_MOVES)
                     if moves:
+                        last_forced_switch_signature = ()
                         if ppo_policy:
                             choice = ppo_policy.choose(moves, turn_state)
                             if choice.fallback_reason:
@@ -668,9 +681,14 @@ async def run_live(options: LiveOptions) -> int:
 
                     now = asyncio.get_running_loop().time()
                     switch_count = await page.locator(".switchmenu button:not([disabled])").count()
+                    switch_signature = switch_options_signature(turn_state.get("switch_options"), switch_count)
+                    if switch_count and switch_signature == last_forced_switch_signature:
+                        await asyncio.sleep(1.5)
+                        continue
                     if switch_count and now - last_forced_switch_at >= 6.0:
                         if await click_switch(page, options.click_delay):
                             last_forced_switch_at = now
+                            last_forced_switch_signature = switch_signature
                             record["turns"] = turn
                             record["forced_switches"] += 1
                             print("  Forced switch clicked.", flush=True)
@@ -679,6 +697,8 @@ async def run_live(options: LiveOptions) -> int:
                     elif switch_count:
                         await asyncio.sleep(1)
                         continue
+                    else:
+                        last_forced_switch_signature = ()
 
                     visible_result = await page.evaluate(VISIBLE_RESULT)
                     if visible_result:
@@ -728,7 +748,7 @@ async def run_live(options: LiveOptions) -> int:
             if options.keep_open:
                 print("  Recording contexts must close before Playwright can save video.", flush=True)
             await browser.close()
-    except Exception as exc:
+    except (Exception, KeyboardInterrupt) as exc:
         message = str(exc)
         if "Executable doesn't exist" in message or "playwright install" in message:
             print("Chromium is missing. Run `showdownrl setup`.", flush=True)

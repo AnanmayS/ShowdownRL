@@ -48,6 +48,38 @@ class SimpleEnvTests(unittest.TestCase):
                 return
         self.fail("rich mechanics did not generate a support move in deterministic sample")
 
+    def test_action_masks_filter_state_dependent_no_ops(self) -> None:
+        env = SimplePokemonMoveEnv(mechanics="rich", seed=3)
+        env.reset()
+        env.own_hp = 1.0
+        env.own_attack_boost = 2.2
+        env.opponent_attack_boost = 0.4
+        env.opponent_hp = 0.1
+        env.moves = [
+            (0.7, 1.0, 1.0, 1.0, 1.0, "attack"),
+            (0.0, 1.0, 0.0, 1.0, 1.0, "recover"),
+            (0.0, 1.0, 0.0, 1.0, 1.0, "setup"),
+            (0.0, 1.0, 0.0, 1.0, 1.0, "status"),
+        ]
+
+        self.assertEqual(env.action_masks().tolist(), [True, False, False, False])
+
+    def test_action_masks_keep_fallback_action_when_all_filtered(self) -> None:
+        env = SimplePokemonMoveEnv(mechanics="rich", seed=4)
+        env.reset()
+        env.own_hp = 1.0
+        env.own_attack_boost = 2.2
+        env.opponent_attack_boost = 0.4
+        env.opponent_hp = 0.1
+        env.moves = [
+            (0.0, 1.0, 0.0, 1.0, 1.0, "recover"),
+            (0.0, 1.0, 0.0, 1.0, 1.0, "recover"),
+            (0.0, 1.0, 0.0, 1.0, 1.0, "setup"),
+            (0.0, 1.0, 0.0, 1.0, 1.0, "status"),
+        ]
+
+        self.assertEqual(env.action_masks().tolist(), [True, True, True, True])
+
 
 if __name__ == "__main__":
     unittest.main()

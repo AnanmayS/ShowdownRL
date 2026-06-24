@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from showdownrl.policy_bridge import (
+    MASKABLE_MODEL_FILENAME,
     RICH_MODEL_FILENAME,
     RICH_OBS_SIZE,
     PPOMovePolicy,
@@ -34,6 +35,7 @@ class PolicyBridgeTests(unittest.TestCase):
         model_files = data["tool"]["setuptools"]["data-files"]["models"]
 
         self.assertIn(f"models/{RICH_MODEL_FILENAME}", model_files)
+        self.assertIn(f"models/{MASKABLE_MODEL_FILENAME}", model_files)
 
     def test_model_search_paths_include_installed_data_dir(self) -> None:
         paths = model_search_paths(RICH_MODEL_FILENAME)

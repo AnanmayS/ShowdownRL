@@ -33,6 +33,7 @@ rl = [
   "numpy",
   "pandas",
   "poke-env",
+  "sb3-contrib",
   "stable-baselines3",
   "torch",
 ]
@@ -49,4 +50,5 @@ models = [
   "models/ppo_move_selection_v3_rich.zip",
   "models/ppo_move_selection_v4_rich.zip",
   "models/ppo_move_selection_v5_rich_finetuned.zip",
+  "models/maskable_ppo_move_selection_v6_rich.zip",
 ]

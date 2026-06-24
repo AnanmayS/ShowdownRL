@@ -20,8 +20,9 @@ share them.
 ## Current AI Benchmark
 
 The default trained simulator policy is
-`ppo_move_selection_v5_rich_finetuned.zip`. It fine-tunes the previous rich PPO
-checkpoint with vectorized rollouts and deterministic evaluation checkpoints.
+`maskable_ppo_move_selection_v6_rich.zip`. It trains MaskablePPO with
+state-dependent action masks that filter tactical no-op moves such as full-HP
+recovery, over-stacking setup, and repeated status drops.
 The rich PPO input extends the original 14-feature observation with per-move
 context for expected damage, STAB, type advantage, finish ranges, recovery,
 setup, and status moves.
@@ -35,10 +36,12 @@ episodes per seed.
 
 | Scenario | Policy | Episodes | Record (W-D-L) | Win rate | Avg reward | Avg turns |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Rich/type-aware seed 42 | Maskable PPO v6 | 1000 | 368-305-327 | 36.8% | +0.569 | 8.01 |
 | Rich/type-aware seed 42 | Fine-tuned PPO v5 | 1000 | 338-311-351 | 33.8% | +0.441 | 7.81 |
 | Rich/type-aware seed 42 | Trained PPO v3 | 1000 | 246-344-410 | 24.6% | +0.182 | 7.76 |
 | Rich/type-aware seed 42 | Type aware | 1000 | 236-366-398 | 23.6% | +0.304 | 6.67 |
 | Rich/type-aware seed 42 | Experimental PPO v4 | 1000 | 233-341-426 | 23.3% | +0.193 | 6.92 |
+| Rich/type-aware seed 99 | Maskable PPO v6 | 1000 | 354-305-341 | 35.4% | +0.526 | 8.06 |
 | Rich/type-aware seed 99 | Fine-tuned PPO v5 | 1000 | 324-311-365 | 32.4% | +0.405 | 7.82 |
 | Rich/type-aware seed 99 | Trained PPO v3 | 1000 | 240-339-421 | 24.0% | +0.159 | 7.76 |
 | Rich/type-aware seed 99 | Type aware | 1000 | 228-363-409 | 22.8% | +0.277 | 6.70 |
@@ -135,7 +138,7 @@ showdownrl live --debug-policy
 showdownrl live --policy ppo
 
 # Use a specific PPO checkpoint
-showdownrl live --policy ppo --model-path models/ppo_move_selection_v5_rich_finetuned.zip
+showdownrl live --policy ppo --model-path models/maskable_ppo_move_selection_v6_rich.zip
 
 # Do not write local battle stats
 showdownrl live --no-stats

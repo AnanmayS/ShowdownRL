@@ -1,5 +1,7 @@
 # ShowdownRL
 
+[![CI](https://github.com/AnanmayS/ShowdownRL/actions/workflows/ci.yml/badge.svg)](https://github.com/AnanmayS/ShowdownRL/actions/workflows/ci.yml)
+
 Watch an AI play Pokemon Showdown in a visible browser.
 
 ShowdownRL opens Pokemon Showdown, signs in with your account or a guest name,
@@ -8,23 +10,25 @@ save a WebM recording of the battle.
 
 ## Current AI Benchmark
 
-The current trained simulator policy is `ppo_move_selection_v1.zip`. In the
-latest local benchmark, the trained PPO policy won **34 of 50 episodes** for a
-**68% win rate**.
+The default trained simulator policy is `ppo_move_selection_v3_rich.zip`. It
+extends the original 14-feature PPO input with per-move context for expected
+damage, STAB, type advantage, finish ranges, recovery, setup, and status moves.
+The v4 experiment added mixed-opponent training and anti-stall reward shaping,
+but v3 still has the best KO win rate on the current rich-mechanics benchmark.
 
-![ShowdownRL policy benchmark](docs/assets/ai_policy_comparison.png)
+| Scenario | Policy | Episodes | Record | Win rate | Avg reward | Avg turns |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Rich/type-aware seed 42 | Trained PPO v3 | 1000 | 246-410-344 | 24.6% | +0.182 | 7.76 |
+| Rich/type-aware seed 42 | Type aware | 1000 | 236-398-366 | 23.6% | +0.304 | 6.67 |
+| Rich/type-aware seed 42 | Experimental PPO v4 | 1000 | 233-426-341 | 23.3% | +0.193 | 6.92 |
+| Rich/type-aware seed 99 | Trained PPO v3 | 1000 | 240-421-339 | 24.0% | +0.159 | 7.76 |
+| Rich/type-aware seed 99 | Type aware | 1000 | 228-409-363 | 22.8% | +0.277 | 6.70 |
+| Rich/type-aware seed 99 | Experimental PPO v4 | 1000 | 225-436-339 | 22.5% | +0.168 | 6.95 |
 
-| Policy | Episodes | Record | Win rate | Avg reward | Avg turns |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Type aware | 50 | 46-4 | 92% | +1.103 | 5.16 |
-| Max damage | 50 | 37-13 | 74% | +0.605 | 6.12 |
-| Trained PPO | 50 | 34-16 | 68% | +0.484 | 5.94 |
-| Random | 50 | 32-18 | 64% | +0.331 | 6.96 |
-
-The simple type-aware baseline is still the strongest policy in this simulator,
-so the next training goal is to beat that baseline. See
-[docs/ai_stats.md](docs/ai_stats.md) for the full report and regeneration
-commands.
+Records are shown as wins-losses-draws. See
+[docs/benchmarks/current_evaluation.csv](docs/benchmarks/current_evaluation.csv)
+and [docs/model_leaderboard.md](docs/model_leaderboard.md) for the side-by-side
+benchmark data.
 
 ## Install
 
@@ -102,8 +106,17 @@ showdownrl live --max-turns 3
 # Play more than one battle in the same run
 showdownrl live --max-battles 3
 
+# Stop a long session after 30 minutes
+showdownrl live --max-battles 50 --max-time 30
+
 # Show move scores while the AI is choosing
 showdownrl live --debug-policy
+
+# Try the trained PPO move selector, falling back to the heuristic if needed
+showdownrl live --policy ppo
+
+# Use a specific PPO checkpoint
+showdownrl live --policy ppo --model-path models/ppo_move_selection_v3_rich.zip
 
 # Do not write local battle stats
 showdownrl live --no-stats
@@ -128,6 +141,7 @@ Generate a local HTML report:
 ```bash
 showdownrl stats --html
 showdownrl stats --open
+showdownrl stats --trend
 ```
 
 Filter the report:
@@ -166,7 +180,11 @@ PS_USERNAME=your_name PS_PASSWORD=your_password showdownrl live
 ```
 
 Battle logs do not store your password. They include local-only battle metadata
-such as result, turns, selected moves, forced switches, errors, and video path.
+such as result, turns, selected moves, forced switches, policy source, rating
+when it can be detected from the page, errors, and video path.
+When `--debug-policy` is used, ShowdownRL also saves local redacted turn-state
+snapshots under the stats directory so you can inspect what the AI saw before
+clicking.
 
 ## Troubleshooting
 
@@ -187,8 +205,8 @@ The repository also contains experimental reinforcement-learning scripts under
 ```bash
 pip install -e ".[rl]"
 python scripts/smoke_test.py
-python scripts/train_ppo.py --timesteps 2048
-python scripts/evaluate_model.py --episodes 100
+python scripts/train_ppo.py --timesteps 2048 --opponent-policy type_aware
+python scripts/evaluate_model.py --episodes 100 --opponent-policy type_aware
 python scripts/generate_ai_stats.py
 PYTHONPATH=. python -m unittest discover -s tests
 ```

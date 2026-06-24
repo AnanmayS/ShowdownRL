@@ -1,28 +1,29 @@
 # AI Stats
 
 This report summarizes the published benchmark in
-`docs/benchmarks/current_evaluation.csv`, generated from
-`results/evaluation.csv` and `SimplePokemonMoveEnv`.
-
-![ShowdownRL policy benchmark](assets/ai_policy_comparison.png)
+`docs/benchmarks/current_evaluation.csv`, generated from `SimplePokemonMoveEnv`.
 
 ## Current Result
 
-The trained PPO policy won 34 of 50 episodes (68%) with an average reward of 0.484.
+The trained PPO v3 policy uses a richer 46-feature observation that includes
+per-move expected damage, STAB, type advantage, finish ranges, recovery, setup,
+and status flags. On rich mechanics, win rate counts actual simulated KOs and
+unfinished episodes are tracked as draws.
 
-The strongest policy in this run was **Type aware** at
-92% win rate. That means the trained model is available and
-working, but the simple hand-written type-aware baseline is still the bar to
-beat in this simulator.
+The v4 experiment added mixed-opponent training and anti-stall reward shaping,
+but it did not beat v3 on either evaluation seed. The default live PPO model
+therefore remains `ppo_move_selection_v3_rich.zip`.
 
 ## Benchmark Table
 
-| Policy | Episodes | Record | Win rate | Avg reward | Avg turns | Reward / turn |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Type aware | 50 | 46-4 | 92% | +1.103 | 5.16 | +0.2138 |
-| Max damage | 50 | 37-13 | 74% | +0.605 | 6.12 | +0.0988 |
-| Trained PPO | 50 | 34-16 | 68% | +0.484 | 5.94 | +0.0814 |
-| Random | 50 | 32-18 | 64% | +0.331 | 6.96 | +0.0475 |
+| Scenario | Policy | Episodes | Record | Win rate | Avg reward | Avg turns |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Rich/type-aware seed 42 | Trained PPO v3 | 1000 | 246-410-344 | 24.6% | +0.182 | 7.76 |
+| Rich/type-aware seed 42 | Type aware | 1000 | 236-398-366 | 23.6% | +0.304 | 6.67 |
+| Rich/type-aware seed 42 | Experimental PPO v4 | 1000 | 233-426-341 | 23.3% | +0.193 | 6.92 |
+| Rich/type-aware seed 99 | Trained PPO v3 | 1000 | 240-421-339 | 24.0% | +0.159 | 7.76 |
+| Rich/type-aware seed 99 | Type aware | 1000 | 228-409-363 | 22.8% | +0.277 | 6.70 |
+| Rich/type-aware seed 99 | Experimental PPO v4 | 1000 | 225-436-339 | 22.5% | +0.168 | 6.95 |
 
 ## What These Stats Mean
 
@@ -38,14 +39,18 @@ beat in this simulator.
 
 ```bash
 pip install -e ".[rl]"
-python scripts/evaluate_model.py --episodes 50
-python scripts/generate_ai_stats.py
+python scripts/train_ppo.py --timesteps 100000 --seed 42 --mechanics typed --opponent-policy type_aware --output models/ppo_move_selection_v2_typed.zip
+python scripts/train_ppo.py --timesteps 300000 --seed 45 --mechanics rich --observation-mode rich --opponent-policy type_aware --output models/ppo_move_selection_v3_rich.zip
+python scripts/train_ppo.py --timesteps 200000 --seed 47 --mechanics rich --observation-mode rich --opponent-policy mixed --output models/ppo_move_selection_v4_rich.zip
+python scripts/evaluate_model.py --episodes 1000 --seed 42 --mechanics rich --opponent-policy type_aware --model models/ppo_move_selection_v2_typed.zip --model models/ppo_move_selection_v3_rich.zip --model models/ppo_move_selection_v4_rich.zip --output results/evaluation_v2_v3_v4_rich_seed42.csv
+python scripts/evaluate_model.py --episodes 1000 --seed 99 --mechanics rich --opponent-policy type_aware --model models/ppo_move_selection_v2_typed.zip --model models/ppo_move_selection_v3_rich.zip --model models/ppo_move_selection_v4_rich.zip --output results/evaluation_v2_v3_v4_rich_seed99.csv
 ```
 
-Model artifact: `ppo_move_selection_v1.zip (0.2 MB, local artifact)`  
-Evaluation CSV timestamp: `2026-06-23`
+Model artifacts: `ppo_move_selection_v2_typed.zip`, `ppo_move_selection_v3_rich.zip`, `ppo_move_selection_v4_rich.zip`  
+Evaluation CSV timestamp: `2026-06-24`
 
 These numbers benchmark the experimental simulator policy. The live browser
-player currently uses a lightweight move-scoring policy for the official
-Pokemon Showdown website, so live ladder performance should be tracked
-separately once battle logging is added.
+player can use the trained model with `showdownrl live --policy ppo`, with a
+heuristic fallback if the checkpoint is missing or selects an unavailable move.
+Live ladder performance should still be tracked separately because real
+Pokemon Showdown battles include mechanics beyond this move-selection simulator.

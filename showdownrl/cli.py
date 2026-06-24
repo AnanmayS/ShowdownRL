@@ -12,7 +12,7 @@ from pathlib import Path
 
 from showdownrl.config import CONFIG_FILE, DEFAULT_SITE, default_stats_dir, UserConfig, delete_config, load_config, merged_config, save_config
 from showdownrl.live import LiveOptions, run_live
-from showdownrl.stats import filter_records, load_battle_records, open_html_report, parse_since, terminal_summary, write_html_report
+from showdownrl.stats import filter_records, load_battle_records, open_html_report, parse_since, terminal_summary, trend_summary, write_html_report
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -44,9 +44,12 @@ def build_parser() -> argparse.ArgumentParser:
     live.add_argument("--keep-open", action="store_true", help="Leave the browser open after the battle loop ends.")
     live.add_argument("--max-turns", type=int, default=200, help="Maximum AI action cycles before stopping.")
     live.add_argument("--max-battles", type=int, default=1, help="Number of battles to play before stopping.")
+    live.add_argument("--max-time", type=float, help="Stop after this many minutes of live play.")
+    live.add_argument("--policy", choices=["heuristic", "ppo"], default="heuristic", help="Move-selection policy.")
+    live.add_argument("--model-path", type=Path, help="Path to a stable-baselines PPO model zip.")
     live.add_argument("--no-stats", action="store_true", help="Do not write local battle stats for this run.")
     live.add_argument("--stats-dir", type=Path, help="Directory for local battle stats.")
-    live.add_argument("--debug-policy", action="store_true", help="Print scored candidate moves each turn.")
+    live.add_argument("--debug-policy", action="store_true", help="Print move scores and save redacted turn snapshots.")
     live.add_argument("--slow-mo-ms", type=int, default=250, help="Browser slow-motion delay in milliseconds.")
     live.add_argument("--click-delay", type=float, default=0.75, help="Pause after visible clicks.")
     live.add_argument("--viewport-width", type=int, default=1280)
@@ -58,6 +61,7 @@ def build_parser() -> argparse.ArgumentParser:
     stats.add_argument("--format", dest="format_name", default="", help="Only include formats containing this text.")
     stats.add_argument("--html", action="store_true", help="Write a local HTML stats report.")
     stats.add_argument("--open", action="store_true", help="Write and open the local HTML stats report.")
+    stats.add_argument("--trend", action="store_true", help="Show daily win-rate trend.")
 
     logout = subparsers.add_parser("logout", help="Delete saved local ShowdownRL credentials.")
     logout.add_argument("--yes", action="store_true", help="Do not ask for confirmation.")
@@ -137,6 +141,9 @@ def options_from_args(args: argparse.Namespace, *, check_ui_only: bool = False) 
         check_ui_only=check_ui_only,
         max_turns=getattr(args, "max_turns", 200),
         max_battles=getattr(args, "max_battles", 1),
+        max_time_minutes=getattr(args, "max_time", None),
+        policy=getattr(args, "policy", "heuristic"),
+        model_path=getattr(args, "model_path", None),
         stats_enabled=not getattr(args, "no_stats", False),
         stats_dir=getattr(args, "stats_dir", None),
         debug_policy=getattr(args, "debug_policy", False),
@@ -196,6 +203,9 @@ def stats_command(args: argparse.Namespace) -> int:
         if args.open:
             open_html_report(path)
     print(terminal_summary(records, corrupt_count=corrupt_count, stats_dir=args.stats_dir))
+    if args.trend:
+        print()
+        print(trend_summary(records))
     return 0
 
 

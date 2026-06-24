@@ -33,18 +33,18 @@ This chart is generated from the published benchmark data in
 It summarizes the two rich/type-aware evaluation seeds, with 1,000 simulator
 episodes per seed.
 
-| Scenario | Policy | Episodes | Record | Win rate | Avg reward | Avg turns |
+| Scenario | Policy | Episodes | Record (W-D-L) | Win rate | Avg reward | Avg turns |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| Rich/type-aware seed 42 | Fine-tuned PPO v5 | 1000 | 338-351-311 | 33.8% | +0.441 | 7.81 |
-| Rich/type-aware seed 42 | Trained PPO v3 | 1000 | 246-410-344 | 24.6% | +0.182 | 7.76 |
-| Rich/type-aware seed 42 | Type aware | 1000 | 236-398-366 | 23.6% | +0.304 | 6.67 |
-| Rich/type-aware seed 42 | Experimental PPO v4 | 1000 | 233-426-341 | 23.3% | +0.193 | 6.92 |
-| Rich/type-aware seed 99 | Fine-tuned PPO v5 | 1000 | 324-365-311 | 32.4% | +0.405 | 7.82 |
-| Rich/type-aware seed 99 | Trained PPO v3 | 1000 | 240-421-339 | 24.0% | +0.159 | 7.76 |
-| Rich/type-aware seed 99 | Type aware | 1000 | 228-409-363 | 22.8% | +0.277 | 6.70 |
-| Rich/type-aware seed 99 | Experimental PPO v4 | 1000 | 225-436-339 | 22.5% | +0.168 | 6.95 |
+| Rich/type-aware seed 42 | Fine-tuned PPO v5 | 1000 | 338-311-351 | 33.8% | +0.441 | 7.81 |
+| Rich/type-aware seed 42 | Trained PPO v3 | 1000 | 246-344-410 | 24.6% | +0.182 | 7.76 |
+| Rich/type-aware seed 42 | Type aware | 1000 | 236-366-398 | 23.6% | +0.304 | 6.67 |
+| Rich/type-aware seed 42 | Experimental PPO v4 | 1000 | 233-341-426 | 23.3% | +0.193 | 6.92 |
+| Rich/type-aware seed 99 | Fine-tuned PPO v5 | 1000 | 324-311-365 | 32.4% | +0.405 | 7.82 |
+| Rich/type-aware seed 99 | Trained PPO v3 | 1000 | 240-339-421 | 24.0% | +0.159 | 7.76 |
+| Rich/type-aware seed 99 | Type aware | 1000 | 228-363-409 | 22.8% | +0.277 | 6.70 |
+| Rich/type-aware seed 99 | Experimental PPO v4 | 1000 | 225-339-436 | 22.5% | +0.168 | 6.95 |
 
-Records are shown as wins-losses-draws. See
+Records are shown as wins-draws-losses. See
 [docs/benchmarks/current_evaluation.csv](docs/benchmarks/current_evaluation.csv)
 and [docs/model_leaderboard.md](docs/model_leaderboard.md) for the side-by-side
 benchmark data.

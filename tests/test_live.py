@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from showdownrl.live import LiveOptions, debug_turn_snapshot, infer_result, switch_options_signature
+from showdownrl.live import LiveOptions, SelectorHealth, debug_turn_snapshot, infer_result, selector_health_lines, switch_options_signature
 
 
 class LiveResultTests(unittest.TestCase):
@@ -50,6 +50,19 @@ class LiveResultTests(unittest.TestCase):
             switch_options_signature([{"text": "Pikachu"}, {"text": "Charizard"}]),
         )
         self.assertEqual(switch_options_signature([], fallback_count=2), ("count:2",))
+
+    def test_selector_health_lines_mark_required_failures(self) -> None:
+        lines = selector_health_lines(
+            [
+                SelectorHealth("choose-name button", True, True, 1),
+                SelectorHealth("battle queue button", False, True, 0),
+                SelectorHealth("move buttons", False, False, 0, "expected during a turn"),
+            ]
+        )
+
+        self.assertIn("[ok] choose-name button (1 visible)", lines[0])
+        self.assertIn("[fail] battle queue button (0 visible)", lines[1])
+        self.assertIn("[info] move buttons (0 visible) - expected during a turn", lines[2])
 
 
 if __name__ == "__main__":

@@ -17,6 +17,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - name: Install package
-        run: python -m pip install -e .
+        run: python -m pip install .
+      - name: Run installed CLI smoke
+        run: |
+          cd /tmp
+          showdownrl --version
+          python -c "from showdownrl.policy_bridge import default_model_path; path = default_model_path(); print(path); assert path.exists(), path"
+      - name: Run benchmark command smoke
+        run: python scripts/regenerate_benchmarks.py --dry-run --episodes 2
       - name: Run tests
         run: python -m unittest discover -s tests

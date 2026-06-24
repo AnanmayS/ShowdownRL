@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -25,17 +26,23 @@ RICH_FEATURES_PER_MOVE = 8
 RICH_OBS_SIZE = SIMPLE_OBS_SIZE + 4 * RICH_FEATURES_PER_MOVE
 
 
+def model_search_paths(filename: str = RICH_MODEL_FILENAME) -> list[Path]:
+    """Return model locations used by editable, source, and wheel installs."""
+    root = Path(__file__).resolve().parent.parent
+    package_dir = Path(__file__).resolve().parent
+    return [
+        root / "models" / filename,
+        Path.cwd() / "models" / filename,
+        package_dir / "models" / filename,
+        Path(sys.prefix) / "models" / filename,
+    ]
+
+
 def default_model_path() -> Path:
     candidates = [
-        Path(__file__).resolve().parent.parent / "models" / RICH_MODEL_FILENAME,
-        Path.cwd() / "models" / RICH_MODEL_FILENAME,
-        Path(__file__).resolve().parent / "models" / RICH_MODEL_FILENAME,
-        DEFAULT_MODEL_PATH,
-        Path.cwd() / "models" / MODEL_FILENAME,
-        Path(__file__).resolve().parent / "models" / MODEL_FILENAME,
-        Path(__file__).resolve().parent.parent / "models" / LEGACY_MODEL_FILENAME,
-        Path.cwd() / "models" / LEGACY_MODEL_FILENAME,
-        Path(__file__).resolve().parent / "models" / LEGACY_MODEL_FILENAME,
+        *model_search_paths(RICH_MODEL_FILENAME),
+        *model_search_paths(MODEL_FILENAME),
+        *model_search_paths(LEGACY_MODEL_FILENAME),
     ]
     for candidate in candidates:
         if candidate.exists():
@@ -83,6 +90,45 @@ def _hp_fraction(pokemon: dict[str, Any] | None) -> float:
         return max(0.0, min(1.0, float(pokemon.get("hp_percent")) / 100.0))
     except (TypeError, ValueError):
         return 1.0
+
+
+def _status_penalty(value: Any) -> float:
+    return 0.2 if str(value or "").strip() else 0.0
+
+
+def defensive_type_score(defender_types: list[str], attacker_types: list[str]) -> float:
+    if not defender_types or not attacker_types:
+        return 0.0
+    incoming = 0.0
+    for attacker_type in attacker_types:
+        chart = TYPE_CHART.get(attacker_type, {})
+        multiplier = 1.0
+        for defender_type in defender_types:
+            multiplier *= chart.get(defender_type, 1.0)
+        incoming += multiplier
+    average_incoming = incoming / len(attacker_types)
+    return max(-1.0, min(1.0, 1.0 - average_incoming))
+
+
+def score_switch_option(option: dict[str, Any], turn_state: dict[str, Any] | None = None) -> float:
+    text = str(option.get("text") or option.get("name") or "").lower()
+    if "fainted" in text or "disabled" in text or "0%" in text:
+        return -100.0
+
+    score = _hp_fraction(option) * 2.0
+    score -= _status_penalty(option.get("status"))
+    switch_types = _normalized_types(option.get("types"))
+    opponent_types = _normalized_types(((turn_state or {}).get("opponent") or {}).get("types"))
+    score += defensive_type_score(switch_types, opponent_types)
+    return score
+
+
+def ranked_switches(
+    switch_options: list[dict[str, Any]],
+    turn_state: dict[str, Any] | None = None,
+) -> list[tuple[dict[str, Any], float]]:
+    scored = [(option, score_switch_option(option, turn_state)) for option in switch_options]
+    return sorted(scored, key=lambda item: item[1], reverse=True)
 
 
 def _accuracy_fraction(move: dict[str, Any]) -> float:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import json
 import statistics
 import webbrowser
@@ -174,6 +175,90 @@ def summarize_records(records: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def record_group_key(record: dict[str, Any], group_by: str) -> str:
+    if group_by == "date":
+        current_date = record_date(record)
+        return current_date.isoformat() if current_date else "unknown date"
+    if group_by == "model":
+        return str(record.get("model_path") or "no model")
+    if group_by == "format":
+        return str(record.get("format") or "current format")
+    return str(record.get("policy") or "unknown policy")
+
+
+def grouped_summaries(records: list[dict[str, Any]], group_by: str) -> list[tuple[str, dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for record in records:
+        grouped[record_group_key(record, group_by)].append(record)
+    return [(key, summarize_records(grouped[key])) for key in sorted(grouped)]
+
+
+def grouped_summary_text(records: list[dict[str, Any]], group_by: str) -> str:
+    lines = [f"By {group_by}:"]
+    groups = grouped_summaries(records, group_by)
+    if not groups:
+        lines.append("  no battles logged yet")
+        return "\n".join(lines)
+    for label, summary in groups:
+        lines.append(
+            f"  {label}: {summary['wins']}-{summary['losses']} "
+            f"({format_percent(summary['win_rate'])}, {summary['total']} battles, "
+            f"{summary['errors']} errors)"
+        )
+    return "\n".join(lines)
+
+
+def export_rows(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = []
+    for record in records:
+        moves = [
+            str(move.get("name") or "")
+            for move in record.get("selected_moves") or []
+            if isinstance(move, dict)
+        ]
+        switches = [
+            str(switch.get("name") or "")
+            for switch in record.get("selected_switches") or []
+            if isinstance(switch, dict)
+        ]
+        rows.append(
+            {
+                "started_at": record.get("started_at", ""),
+                "ended_at": record.get("ended_at", ""),
+                "result": record.get("result", "unknown"),
+                "turns": record.get("turns", 0),
+                "format": record.get("format", "current format"),
+                "policy": record.get("policy", ""),
+                "model_path": record.get("model_path", ""),
+                "forced_switches": record.get("forced_switches", 0),
+                "selected_moves": ",".join(moves),
+                "selected_switches": ",".join(switches),
+                "start_rating": record.get("start_rating", ""),
+                "end_rating": record.get("end_rating", ""),
+                "errors": "; ".join(str(error) for error in record.get("errors") or []),
+                "video_path": record.get("video_path", ""),
+            }
+        )
+    return rows
+
+
+def write_csv_export(records: list[dict[str, Any]], path: Path) -> Path:
+    rows = export_rows(records)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = list(rows[0].keys()) if rows else list(export_rows([{}])[0].keys())
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
+
+
+def write_json_export(records: list[dict[str, Any]], path: Path) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(export_rows(records), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
 def format_percent(value: float) -> str:
     return f"{value * 100:.1f}%"
 
@@ -268,6 +353,28 @@ def svg_bar(label: str, value: float, color: str) -> str:
 def html_report(records: list[dict[str, Any]], *, corrupt_count: int = 0) -> str:
     summary = summarize_records(records)
     total = max(1, summary["total"])
+    policy_rows = "\n".join(
+        "<tr>"
+        f"<td>{escape(label)}</td>"
+        f"<td>{item['total']}</td>"
+        f"<td>{item['wins']}-{item['losses']}</td>"
+        f"<td>{format_percent(item['win_rate'])}</td>"
+        f"<td>{item['unknowns']}</td>"
+        f"<td>{item['errors']}</td>"
+        "</tr>"
+        for label, item in grouped_summaries(records, "policy")
+    ) or '<tr><td colspan="6">No battles logged yet</td></tr>'
+    issue_rows = "\n".join(
+        "<tr>"
+        f"<td>{escape(str(item.get('started_at') or ''))}</td>"
+        f"<td>{escape(str(item.get('result') or 'unknown'))}</td>"
+        f"<td>{escape(str(item.get('policy') or ''))}</td>"
+        f"<td>{escape('; '.join(str(error) for error in item.get('errors') or []))}</td>"
+        f"<td>{escape(str(item.get('visible_result_text') or ''))}</td>"
+        "</tr>"
+        for item in records
+        if item.get("result") in {"unknown", "error"}
+    ) or '<tr><td colspan="5">No unknown or error battles logged</td></tr>'
     move_rows = "\n".join(
         f"<tr><td>{escape(move)}</td><td>{count}</td></tr>"
         for move, count in summary["most_used_moves"]
@@ -317,8 +424,12 @@ def html_report(records: list[dict[str, Any]], *, corrupt_count: int = 0) -> str
   {svg_bar("Losses", summary["losses"] / total * 100, "#b94b4b")}
   {svg_bar("Unknown", summary["unknowns"] / total * 100, "#61737f")}
   {svg_bar("Errors", summary["errors"] / total * 100, "#d28b36")}
+  <h2>Policy Breakdown</h2>
+  <table><thead><tr><th>Policy</th><th>Battles</th><th>Record</th><th>Win rate</th><th>Unknown</th><th>Errors</th></tr></thead><tbody>{policy_rows}</tbody></table>
   <h2>Most-used Moves</h2>
   <table><thead><tr><th>Move</th><th>Uses</th></tr></thead><tbody>{move_rows}</tbody></table>
+  <h2>Unknown and Error Battles</h2>
+  <table><thead><tr><th>Started</th><th>Result</th><th>Policy</th><th>Errors</th><th>Visible result</th></tr></thead><tbody>{issue_rows}</tbody></table>
   <h2>Recent Battles</h2>
   <table><thead><tr><th>Started</th><th>Result</th><th>Turns</th><th>Rating</th><th>Format</th><th>Visible result</th></tr></thead><tbody>{battle_rows}</tbody></table>
   <p class="note">Skipped corrupt log lines: {corrupt_count}</p>

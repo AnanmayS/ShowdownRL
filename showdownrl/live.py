@@ -11,7 +11,7 @@ from typing import Any
 
 from showdownrl.ai import ranked_moves
 from showdownrl.config import DEFAULT_SITE, default_record_dir
-from showdownrl.policy_bridge import PPOMovePolicy, PolicyChoice, PolicyLoadError
+from showdownrl.policy_bridge import PPOMovePolicy, PolicyChoice, PolicyLoadError, ranked_switches
 from showdownrl.stats import append_battle_record, utc_now_iso, write_debug_snapshot
 
 CONNECTED = "() => document.querySelector('button[name=openSounds], .userbar') !== null"
@@ -177,11 +177,24 @@ GET_TURN_STATE = """
         power: clean(button.getAttribute('data-basepower') || button.getAttribute('data-power')),
         text: clean(button.textContent),
     })) : [];
-    const switches = Array.from(document.querySelectorAll('.switchmenu button:not([disabled])')).map((button, index) => ({
-        index,
-        name: clean(button.textContent),
-        text: clean(button.textContent),
-    }));
+    const switches = Array.from(document.querySelectorAll('.switchmenu button:not([disabled])')).map((button, index) => {
+        const text = clean(button.textContent);
+        const details = [
+            button.getAttribute('aria-label'),
+            button.getAttribute('title'),
+            button.getAttribute('data-tooltip'),
+            text,
+        ].filter(Boolean).join(' ');
+        const statusMatch = text.match(/\\b(BRN|PAR|SLP|FRZ|PSN|TOX)\\b/i);
+        return {
+            index,
+            name: text.replace(/\\d{1,3}\\s*%.*/, '').trim(),
+            hp_percent: numberFromText(text),
+            status: statusMatch ? statusMatch[1].toUpperCase() : '',
+            types: parseTypes(details),
+            text,
+        };
+    });
     const logNodes = Array.from(document.querySelectorAll('.battle-history > *, .battle-log > *, .battle-log-add, .battle-log'));
     const battle_log_tail = logNodes.map(node => clean(node.textContent)).filter(Boolean).slice(-12);
     return {
@@ -219,6 +232,15 @@ class LiveOptions:
     click_delay: float = 0.75
     viewport_width: int = 1280
     viewport_height: int = 800
+
+
+@dataclass(frozen=True)
+class SelectorHealth:
+    name: str
+    ok: bool
+    required: bool
+    count: int | None = None
+    note: str = ""
 
 
 async def wait_cond(page: Any, js: str, timeout: float = 30.0) -> bool:
@@ -270,6 +292,52 @@ async def click_locator(page: Any, locator: Any, label: str, delay: float = 0.75
 
 def button_with_text(page: Any, pattern: str) -> Any:
     return page.locator("button").filter(has_text=re.compile(pattern, re.I))
+
+
+async def visible_count(locator: Any) -> int:
+    count = await locator.count()
+    visible = 0
+    for index in range(count):
+        try:
+            if await locator.nth(index).is_visible():
+                visible += 1
+        except Exception:
+            continue
+    return visible
+
+
+def selector_health_lines(checks: list[SelectorHealth]) -> list[str]:
+    lines = []
+    for check in checks:
+        status = "ok" if check.ok else ("fail" if check.required else "info")
+        count = "" if check.count is None else f" ({check.count} visible)"
+        note = f" - {check.note}" if check.note else ""
+        lines.append(f"  [{status}] {check.name}{count}{note}")
+    return lines
+
+
+async def collect_selector_health(page: Any) -> list[SelectorHealth]:
+    try:
+        connected = bool(await page.evaluate(CONNECTED))
+    except Exception:
+        connected = False
+
+    choose_name_count = await visible_count(button_with_text(page, r"choose name"))
+    battle_count = await visible_count(button_with_text(page, r"battle!|find a battle|find a random opponent"))
+    battle_panel_count = await visible_count(page.locator(".battle"))
+    move_button_count = await visible_count(page.locator(".movemenu button:not([disabled])"))
+    switch_button_count = await visible_count(page.locator(".switchmenu button:not([disabled])"))
+    result_node_count = await page.locator(".broadcast-green,.broadcast-red,.battle-history").count()
+
+    return [
+        SelectorHealth("lobby connection", connected, True, note="public lobby loaded"),
+        SelectorHealth("choose-name button", choose_name_count > 0, True, choose_name_count),
+        SelectorHealth("battle queue button", battle_count > 0, True, battle_count),
+        SelectorHealth("battle panel", battle_panel_count > 0, False, battle_panel_count, "expected after queueing"),
+        SelectorHealth("move buttons", move_button_count > 0, False, move_button_count, "expected during a turn"),
+        SelectorHealth("switch buttons", switch_button_count > 0, False, switch_button_count, "expected on forced switches"),
+        SelectorHealth("result log nodes", result_node_count > 0, False, result_node_count, "expected during/after battle"),
+    ]
 
 
 async def fill_first_visible(locator: Any, text: str) -> bool:
@@ -359,9 +427,9 @@ async def click_team_preview(page: Any, click_delay: float) -> bool:
     return await click_locator(page, battle_buttons, "Confirm Team", click_delay)
 
 
-async def click_switch(page: Any, click_delay: float) -> bool:
+async def click_switch(page: Any, switch_index: int, label: str, click_delay: float) -> bool:
     switches = page.locator(".switchmenu button:not([disabled])")
-    return await click_locator(page, switches, "Switch", click_delay)
+    return await click_locator(page, switches.nth(switch_index), label, click_delay)
 
 
 async def click_move(page: Any, move_index: int, label: str, click_delay: float) -> bool:
@@ -400,8 +468,10 @@ def new_battle_record(options: LiveOptions, battle_number: int) -> dict[str, Any
         "result": "unknown",
         "turns": 0,
         "selected_moves": [],
+        "selected_switches": [],
         "forced_switches": 0,
         "policy": options.policy,
+        "model_path": str(options.model_path or ""),
         "start_rating": None,
         "end_rating": None,
         "errors": [],
@@ -543,18 +613,15 @@ async def run_live(options: LiveOptions) -> int:
             await asyncio.sleep(1.5)
 
             if options.check_ui_only:
-                choose_name = button_with_text(page, r"choose name")
-                battle = button_with_text(page, r"battle!|find a battle|find a random opponent")
-                await first_visible(choose_name, timeout_ms=8000)
-                await first_visible(battle, timeout_ms=8000)
-                choose_name_count = await choose_name.count()
-                battle_count = await battle.count()
+                await first_visible(button_with_text(page, r"choose name"), timeout_ms=8000)
+                await first_visible(button_with_text(page, r"battle!|find a battle|find a random opponent"), timeout_ms=8000)
+                checks = await collect_selector_health(page)
                 print("\n[check-ui-only]", flush=True)
-                print(f"  Choose Name buttons visible/matched: {choose_name_count}", flush=True)
-                print(f"  Battle buttons visible/matched: {battle_count}", flush=True)
+                for line in selector_health_lines(checks):
+                    print(line, flush=True)
                 await context.close()
                 await browser.close()
-                return 0 if choose_name_count and battle_count else 1
+                return 0 if all(check.ok for check in checks if check.required) else 1
 
             print(f"\n[2] Signing in as {options.username}...", flush=True)
             login_result = await login(page, options.username, options.password, options.guest, options.click_delay)
@@ -581,6 +648,8 @@ async def run_live(options: LiveOptions) -> int:
                     break
 
                 record = new_battle_record(options, battle_number)
+                if ppo_policy:
+                    record["model_path"] = str(ppo_policy.model_path)
                 active_record = record
                 record["start_rating"] = await safe_ladder_rating(page)
                 print(f"\n[3] Queueing for battle {battle_number}/{max(1, options.max_battles)}...", flush=True)
@@ -686,12 +755,30 @@ async def run_live(options: LiveOptions) -> int:
                         await asyncio.sleep(1.5)
                         continue
                     if switch_count and now - last_forced_switch_at >= 6.0:
-                        if await click_switch(page, options.click_delay):
+                        switch_options = turn_state.get("switch_options") or [
+                            {"index": index, "name": f"Switch {index + 1}", "text": ""}
+                            for index in range(switch_count)
+                        ]
+                        ranked_switch_options = ranked_switches(switch_options, turn_state)
+                        best_switch, switch_score = ranked_switch_options[0]
+                        switch_label = str(best_switch.get("name") or best_switch.get("text") or "Switch").strip()
+                        if await click_switch(page, int(best_switch.get("index") or 0), switch_label, options.click_delay):
                             last_forced_switch_at = now
                             last_forced_switch_signature = switch_signature
                             record["turns"] = turn
                             record["forced_switches"] += 1
-                            print("  Forced switch clicked.", flush=True)
+                            record["selected_switches"].append(
+                                {
+                                    "turn": turn,
+                                    "name": switch_label,
+                                    "hp_percent": best_switch.get("hp_percent"),
+                                    "status": best_switch.get("status", ""),
+                                    "types": best_switch.get("types", []),
+                                    "score": round(switch_score, 4),
+                                    "policy_source": "heuristic",
+                                }
+                            )
+                            print(f"  Forced switch clicked: {switch_label} (score {switch_score:.2f}).", flush=True)
                             await asyncio.sleep(2.5)
                             continue
                     elif switch_count:

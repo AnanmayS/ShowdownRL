@@ -39,11 +39,13 @@ therefore remains `ppo_move_selection_v3_rich.zip`.
 
 ```bash
 pip install -e ".[rl]"
-python scripts/train_ppo.py --timesteps 100000 --seed 42 --mechanics typed --opponent-policy type_aware --output models/ppo_move_selection_v2_typed.zip
-python scripts/train_ppo.py --timesteps 300000 --seed 45 --mechanics rich --observation-mode rich --opponent-policy type_aware --output models/ppo_move_selection_v3_rich.zip
-python scripts/train_ppo.py --timesteps 200000 --seed 47 --mechanics rich --observation-mode rich --opponent-policy mixed --output models/ppo_move_selection_v4_rich.zip
-python scripts/evaluate_model.py --episodes 1000 --seed 42 --mechanics rich --opponent-policy type_aware --model models/ppo_move_selection_v2_typed.zip --model models/ppo_move_selection_v3_rich.zip --model models/ppo_move_selection_v4_rich.zip --output results/evaluation_v2_v3_v4_rich_seed42.csv
-python scripts/evaluate_model.py --episodes 1000 --seed 99 --mechanics rich --opponent-policy type_aware --model models/ppo_move_selection_v2_typed.zip --model models/ppo_move_selection_v3_rich.zip --model models/ppo_move_selection_v4_rich.zip --output results/evaluation_v2_v3_v4_rich_seed99.csv
+python scripts/regenerate_benchmarks.py
+```
+
+To smoke-test the benchmark command generation without running RL evaluation:
+
+```bash
+python scripts/regenerate_benchmarks.py --dry-run --episodes 2
 ```
 
 Model artifacts: `ppo_move_selection_v2_typed.zip`, `ppo_move_selection_v3_rich.zip`, `ppo_move_selection_v4_rich.zip`  

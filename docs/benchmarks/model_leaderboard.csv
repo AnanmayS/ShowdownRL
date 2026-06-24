@@ -1,0 +1,6 @@
+model,mechanics,opponent_policy,observation_mode,training_seed,timesteps,evaluation_seed,episodes,wins,losses,draws,win_rate,non_loss_rate,average_reward,status
+ppo_move_selection_v2_typed,typed,type_aware,simple,42,100000,42,1000,,,,0.717,,0.421611,published-v2
+ppo_move_selection_v3_rich,rich,type_aware,rich,45,300000,42,1000,246,410,344,0.246,0.59,0.182074,default
+ppo_move_selection_v3_rich,rich,type_aware,rich,45,300000,99,1000,240,421,339,0.24,0.579,0.15879,default
+ppo_move_selection_v4_rich,rich,mixed,rich,47,200000,42,1000,233,426,341,0.233,0.574,0.193247,experimental-not-promoted
+ppo_move_selection_v4_rich,rich,mixed,rich,47,200000,99,1000,225,436,339,0.225,0.564,0.167789,experimental-not-promoted

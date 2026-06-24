@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import statistics
 import webbrowser
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import date, datetime, timezone
 from html import escape
 from pathlib import Path
@@ -15,6 +15,7 @@ from showdownrl.config import default_stats_dir
 
 BATTLE_LOG_NAME = "battles.jsonl"
 HTML_REPORT_NAME = "stats.html"
+DEBUG_SNAPSHOT_DIR = "debug-turns"
 
 
 def utc_now_iso() -> str:
@@ -29,12 +30,27 @@ def html_report_path(stats_dir: Path | None = None) -> Path:
     return (stats_dir or default_stats_dir()) / HTML_REPORT_NAME
 
 
+def debug_snapshot_dir(stats_dir: Path | None = None) -> Path:
+    return (stats_dir or default_stats_dir()) / DEBUG_SNAPSHOT_DIR
+
+
 def append_battle_record(record: dict[str, Any], stats_dir: Path | None = None) -> Path:
     path = battle_log_path(stats_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(record, sort_keys=True) + "\n")
     return path
+
+
+def write_debug_snapshot(snapshot: dict[str, Any], stats_dir: Path | None = None) -> Path:
+    path = debug_snapshot_dir(stats_dir)
+    path.mkdir(parents=True, exist_ok=True)
+    battle = int(snapshot.get("battle_number") or 0)
+    turn = int(snapshot.get("turn") or 0)
+    stamp = str(snapshot.get("captured_at") or utc_now_iso()).replace(":", "").replace("+", "z")
+    file_path = path / f"battle-{battle:02d}-turn-{turn:03d}-{stamp}.json"
+    file_path.write_text(json.dumps(snapshot, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return file_path
 
 
 def load_battle_records(stats_dir: Path | None = None) -> tuple[list[dict[str, Any]], int]:
@@ -96,6 +112,29 @@ def filter_records(
     return filtered
 
 
+def numeric_rating(value: Any) -> int | None:
+    try:
+        rating = int(value)
+    except (TypeError, ValueError):
+        return None
+    return rating if 0 < rating < 10000 else None
+
+
+def current_streak(records: list[dict[str, Any]]) -> tuple[str, int]:
+    result = ""
+    count = 0
+    for item in reversed(records):
+        current = str(item.get("result") or "")
+        if current not in {"win", "loss"}:
+            continue
+        if not result:
+            result = current
+        if current != result:
+            break
+        count += 1
+    return result, count
+
+
 def summarize_records(records: list[dict[str, Any]]) -> dict[str, Any]:
     wins = sum(1 for item in records if item.get("result") == "win")
     losses = sum(1 for item in records if item.get("result") == "loss")
@@ -104,6 +143,13 @@ def summarize_records(records: list[dict[str, Any]]) -> dict[str, Any]:
     decided = wins + losses
     turns = [int(item.get("turns") or 0) for item in records if int(item.get("turns") or 0) > 0]
     forced_switches = sum(int(item.get("forced_switches") or 0) for item in records)
+    streak_result, streak_count = current_streak(records)
+    ratings = [
+        rating
+        for item in records
+        for rating in [numeric_rating(item.get("end_rating"))]
+        if rating is not None
+    ]
 
     move_counter: Counter[str] = Counter()
     for item in records:
@@ -120,6 +166,10 @@ def summarize_records(records: list[dict[str, Any]]) -> dict[str, Any]:
         "win_rate": wins / decided if decided else 0.0,
         "average_turns": statistics.fmean(turns) if turns else 0.0,
         "forced_switches": forced_switches,
+        "current_rating": ratings[-1] if ratings else None,
+        "rating_delta": ratings[-1] - ratings[0] if len(ratings) >= 2 else 0,
+        "streak_result": streak_result,
+        "streak_count": streak_count,
         "most_used_moves": move_counter.most_common(10),
     }
 
@@ -145,6 +195,12 @@ def terminal_summary(
         f"Average turns: {summary['average_turns']:.1f}",
         f"Forced switches: {summary['forced_switches']}",
     ]
+    if summary["streak_count"]:
+        label = "wins" if summary["streak_result"] == "win" else "losses"
+        lines.append(f"Current streak: {summary['streak_count']} {label}")
+    if summary["current_rating"] is not None:
+        delta = int(summary["rating_delta"])
+        lines.append(f"Current rating: {summary['current_rating']} ({delta:+d})")
     if corrupt_count:
         lines.append(f"Skipped corrupt log lines: {corrupt_count}")
 
@@ -167,6 +223,30 @@ def terminal_summary(
         turns = item.get("turns") or 0
         format_name = item.get("format") or "current format"
         lines.append(f"  {started} | {result} | {turns} turns | {format_name}")
+    return "\n".join(lines)
+
+
+def trend_summary(records: list[dict[str, Any]]) -> str:
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for record in records:
+        current_date = record_date(record)
+        key = current_date.isoformat() if current_date else "unknown date"
+        grouped[key].append(record)
+
+    lines = ["Trend:"]
+    if not grouped:
+        lines.append("  no battles logged yet")
+        return "\n".join(lines)
+
+    for key in sorted(grouped):
+        day_records = grouped[key]
+        summary = summarize_records(day_records)
+        rating = summary["current_rating"]
+        rating_text = f" | rating {rating}" if rating is not None else ""
+        lines.append(
+            f"  {key}: {summary['wins']}-{summary['losses']} "
+            f"({format_percent(summary['win_rate'])}, {summary['total']} battles){rating_text}"
+        )
     return "\n".join(lines)
 
 
@@ -197,11 +277,12 @@ def html_report(records: list[dict[str, Any]], *, corrupt_count: int = 0) -> str
         f"<td>{escape(str(item.get('started_at') or ''))}</td>"
         f"<td>{escape(str(item.get('result') or 'unknown'))}</td>"
         f"<td>{escape(str(item.get('turns') or 0))}</td>"
+        f"<td>{escape(str(item.get('end_rating') or ''))}</td>"
         f"<td>{escape(str(item.get('format') or 'current format'))}</td>"
         f"<td>{escape(str(item.get('visible_result_text') or ''))}</td>"
         "</tr>"
         for item in records[-50:]
-    ) or '<tr><td colspan="5">No battles logged yet</td></tr>'
+    ) or '<tr><td colspan="6">No battles logged yet</td></tr>'
 
     return f"""<!doctype html>
 <html lang="en">
@@ -239,7 +320,7 @@ def html_report(records: list[dict[str, Any]], *, corrupt_count: int = 0) -> str
   <h2>Most-used Moves</h2>
   <table><thead><tr><th>Move</th><th>Uses</th></tr></thead><tbody>{move_rows}</tbody></table>
   <h2>Recent Battles</h2>
-  <table><thead><tr><th>Started</th><th>Result</th><th>Turns</th><th>Format</th><th>Visible result</th></tr></thead><tbody>{battle_rows}</tbody></table>
+  <table><thead><tr><th>Started</th><th>Result</th><th>Turns</th><th>Rating</th><th>Format</th><th>Visible result</th></tr></thead><tbody>{battle_rows}</tbody></table>
   <p class="note">Skipped corrupt log lines: {corrupt_count}</p>
 </body>
 </html>

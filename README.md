@@ -32,20 +32,21 @@ setup, and status moves.
 This chart is generated from the published benchmark data in
 [docs/benchmarks/current_evaluation.csv](docs/benchmarks/current_evaluation.csv).
 It summarizes the two rich/type-aware evaluation seeds, with 1,000 simulator
-episodes per seed.
+episodes per seed. The benchmark uses the corrected simulator where the
+opponent receives its own hidden move set instead of reusing the agent's moves.
 
 | Scenario | Policy | Episodes | Record (W-D-L) | Win rate | Avg reward | Avg turns |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| Rich/type-aware seed 42 | Maskable PPO v6 | 1000 | 368-305-327 | 36.8% | +0.569 | 8.01 |
-| Rich/type-aware seed 42 | Fine-tuned PPO v5 | 1000 | 338-311-351 | 33.8% | +0.441 | 7.81 |
-| Rich/type-aware seed 42 | Trained PPO v3 | 1000 | 246-344-410 | 24.6% | +0.182 | 7.76 |
-| Rich/type-aware seed 42 | Type aware | 1000 | 236-366-398 | 23.6% | +0.304 | 6.67 |
-| Rich/type-aware seed 42 | Experimental PPO v4 | 1000 | 233-341-426 | 23.3% | +0.193 | 6.92 |
-| Rich/type-aware seed 99 | Maskable PPO v6 | 1000 | 354-305-341 | 35.4% | +0.526 | 8.06 |
-| Rich/type-aware seed 99 | Fine-tuned PPO v5 | 1000 | 324-311-365 | 32.4% | +0.405 | 7.82 |
-| Rich/type-aware seed 99 | Trained PPO v3 | 1000 | 240-339-421 | 24.0% | +0.159 | 7.76 |
-| Rich/type-aware seed 99 | Type aware | 1000 | 228-363-409 | 22.8% | +0.277 | 6.70 |
-| Rich/type-aware seed 99 | Experimental PPO v4 | 1000 | 225-339-436 | 22.5% | +0.168 | 6.95 |
+| Rich/type-aware seed 42 | Maskable PPO v6 | 1000 | 565-8-427 | 56.5% | +0.338 | 6.51 |
+| Rich/type-aware seed 42 | Fine-tuned PPO v5 | 1000 | 527-3-470 | 52.7% | +0.222 | 6.16 |
+| Rich/type-aware seed 42 | Trained PPO v3 | 1000 | 498-3-499 | 49.8% | +0.116 | 6.23 |
+| Rich/type-aware seed 42 | Type aware | 1000 | 494-0-506 | 49.4% | +0.149 | 5.58 |
+| Rich/type-aware seed 42 | Experimental PPO v4 | 1000 | 492-0-508 | 49.2% | +0.122 | 5.71 |
+| Rich/type-aware seed 99 | Maskable PPO v6 | 1000 | 559-9-432 | 55.9% | +0.312 | 6.63 |
+| Rich/type-aware seed 99 | Fine-tuned PPO v5 | 1000 | 523-4-473 | 52.3% | +0.206 | 6.17 |
+| Rich/type-aware seed 99 | Trained PPO v3 | 1000 | 494-4-502 | 49.4% | +0.102 | 6.25 |
+| Rich/type-aware seed 99 | Type aware | 1000 | 488-1-511 | 48.8% | +0.126 | 5.63 |
+| Rich/type-aware seed 99 | Experimental PPO v4 | 1000 | 485-1-514 | 48.5% | +0.097 | 5.77 |
 
 Records are shown as wins-draws-losses. See
 [docs/benchmarks/current_evaluation.csv](docs/benchmarks/current_evaluation.csv)

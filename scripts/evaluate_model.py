@@ -26,7 +26,11 @@ from stable_baselines3 import PPO
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from showdownrl.simple_env import SimplePokemonMoveEnv
+from showdownrl.simple_env import (
+    BASE_RICH_OBS_SIZE,
+    BENCH_FEATURES_PER_POKEMON,
+    SimplePokemonMoveEnv,
+)
 from showdownrl.policies import random_policy, max_damage_policy, type_aware_policy
 from showdownrl.policy_bridge import default_model_path
 
@@ -94,6 +98,7 @@ def evaluate_policy(
     opponent_policy,
     mechanics,
     observation_mode,
+    max_bench_size: int | None = None,
     *,
     pass_env: bool = False,
 ):
@@ -113,6 +118,7 @@ def evaluate_policy(
             opponent_policy=opponent_policy,
             mechanics=mechanics,
             observation_mode=observation_mode,
+            **({} if max_bench_size is None else {"max_bench_size": max_bench_size}),
         )
         obs, _ = env.reset()
         done = False
@@ -182,6 +188,17 @@ def load_rl_model(model_path: Path):
             ) from maskable_error
 
 
+def model_env_shape(model) -> tuple[str, int]:
+    model_shape = getattr(model.observation_space, "shape", ())
+    obs_size = int(model_shape[0]) if model_shape else BASE_RICH_OBS_SIZE
+    if obs_size <= 14:
+        return "simple", 0
+    if obs_size <= BASE_RICH_OBS_SIZE:
+        return "rich", 0
+    bench_features = obs_size - BASE_RICH_OBS_SIZE
+    return "rich", max(0, bench_features // BENCH_FEATURES_PER_POKEMON)
+
+
 def main():
     args = parse_args()
     root = Path(__file__).resolve().parent.parent
@@ -231,8 +248,7 @@ def main():
         policy_name = model_path.stem
         print(f"\n  {policy_name}...")
         model, model_kind = load_rl_model(model_path)
-        model_shape = getattr(model.observation_space, "shape", ())
-        model_observation_mode = "rich" if model_shape and int(model_shape[0]) > 14 else "simple"
+        model_observation_mode, model_max_bench_size = model_env_shape(model)
 
         def ppo_policy(obs, env):
             predict_kwargs = {"deterministic": True}
@@ -250,6 +266,7 @@ def main():
             args.opponent_policy,
             args.mechanics,
             model_observation_mode if args.observation_mode == "auto" else args.observation_mode,
+            max_bench_size=model_max_bench_size,
             pass_env=True,
         )
         stats.update(

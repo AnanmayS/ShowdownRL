@@ -66,6 +66,16 @@ def policy_label(policy: str) -> str:
     return labels.get(policy, policy.replace("_", " ").title())
 
 
+def chart_label(policy: str) -> str:
+    labels = {
+        "maskable_ppo_v11_conservative_3M": "Maskable PPO v11",
+        "type_aware_policy": "Type aware",
+        "max_damage_policy": "Max damage",
+        "random_policy": "Random",
+    }
+    return labels.get(policy, policy_label(policy))
+
+
 def scenario_label(scenario: str) -> str:
     if scenario == "rich_type_aware_seed42":
         return "Rich/type-aware seed 42"
@@ -169,68 +179,231 @@ def make_chart(stats: list[PolicyStats]) -> None:
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    import matplotlib.patheffects as path_effects
 
-    ordered = aggregate_stats(stats)[:8]
-    labels = [policy_label(item.policy) for item in ordered]
+    ordered = aggregate_stats(stats)[:6]
+    ordered = list(reversed(ordered))
+    labels = [chart_label(item.policy) for item in ordered]
     win_rates = [item.win_rate * 100 for item in ordered]
-    non_loss = [item.non_loss_rate * 100 for item in ordered]
+    non_loss_rates = [item.non_loss_rate * 100 for item in ordered]
     rewards = [item.average_reward for item in ordered]
+    turns = [item.average_turns for item in ordered]
 
-    colors = [
-        "#2f6f73",
-        "#d28b36",
-        "#6d5a9c",
-        "#61737f",
-        "#b0574f",
-        "#507c55",
-        "#8a6f3d",
-        "#486b9a",
-    ]
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5.2))
-    fig.patch.set_facecolor("#f8faf9")
+    fig = plt.figure(figsize=(15.5, 8.8), facecolor="#08111f")
+    grid = fig.add_gridspec(
+        1,
+        2,
+        width_ratios=[1.72, 1.0],
+        left=0.15,
+        right=0.965,
+        top=0.79,
+        bottom=0.12,
+        wspace=0.08,
+    )
+    ax = fig.add_subplot(grid[0, 0])
+    panel = fig.add_subplot(grid[0, 1])
 
-    for ax in axes:
-        ax.set_facecolor("#f8faf9")
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        ax.grid(axis="y", color="#d7dedb", linewidth=0.8, alpha=0.8)
-        ax.set_axisbelow(True)
+    fig.text(
+        0.07,
+        0.935,
+        "ShowdownRL bench simulator benchmark",
+        color="#f7fbff",
+        fontsize=28,
+        fontweight="bold",
+    )
+    fig.text(
+        0.071,
+        0.89,
+        "1,000 episodes per seed | rich mechanics | type-aware opponent | aggregate over seeds 42 and 99",
+        color="#96a6ba",
+        fontsize=12,
+    )
+    fig.text(
+        0.071,
+        0.852,
+        "V11 is the new default: 7-action MaskablePPO with bench switching and 106 observation features.",
+        color="#d8e6f3",
+        fontsize=12,
+    )
 
-    bars = axes[0].bar(labels, win_rates, color=colors, edgecolor="#f8faf9")
-    axes[0].set_title("Win rate")
-    axes[0].set_ylim(0, max(65, max(win_rates) + 8))
-    axes[0].set_ylabel("Percent")
-    for bar, value in zip(bars, win_rates):
-        axes[0].text(bar.get_x() + bar.get_width() / 2, value + 1.3, f"{value:.1f}%", ha="center", fontsize=8)
+    for axis in (ax, panel):
+        axis.set_facecolor("#0d1b2d")
+        for spine in axis.spines.values():
+            spine.set_visible(False)
 
-    bars = axes[1].bar(labels, non_loss, color=colors, edgecolor="#f8faf9")
-    axes[1].set_title("Non-loss rate")
-    axes[1].set_ylim(0, max(65, max(non_loss) + 8))
-    axes[1].set_ylabel("Percent")
-    for bar, value in zip(bars, non_loss):
-        axes[1].text(bar.get_x() + bar.get_width() / 2, value + 1.3, f"{value:.1f}%", ha="center", fontsize=8)
+    y_positions = list(range(len(ordered)))
+    bar_height = 0.34
+    win_color = "#45d2c9"
+    non_loss_color = "#f8b84e"
+    muted_text = "#aebdd0"
+    strong_text = "#edf6ff"
+    grid_color = "#22344e"
 
-    bars = axes[2].bar(labels, rewards, color=colors, edgecolor="#f8faf9")
-    axes[2].set_title("Average reward")
-    axes[2].axhline(0, color="#6b7280", linewidth=0.9)
-    for bar, value in zip(bars, rewards):
-        y = value + 0.03 if value >= 0 else value - 0.05
-        axes[2].text(
-            bar.get_x() + bar.get_width() / 2,
+    ax.barh(
+        [pos + bar_height / 2 for pos in y_positions],
+        win_rates,
+        height=bar_height,
+        color=win_color,
+        alpha=0.92,
+        label="Win rate",
+    )
+    ax.barh(
+        [pos - bar_height / 2 for pos in y_positions],
+        non_loss_rates,
+        height=bar_height,
+        color=non_loss_color,
+        alpha=0.92,
+        label="Non-loss",
+    )
+    ax.set_xlim(0, 90)
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels(labels, color=strong_text, fontsize=12, fontweight="bold")
+    ax.tick_params(axis="x", colors=muted_text, labelsize=10)
+    ax.tick_params(axis="y", length=0)
+    ax.grid(axis="x", color=grid_color, linewidth=1.0, alpha=0.7)
+    ax.set_axisbelow(True)
+    ax.set_xlabel("Rate (%)", color=muted_text, fontsize=11)
+    ax.legend(
+        loc="lower right",
+        frameon=False,
+        fontsize=11,
+        labelcolor=strong_text,
+        handlelength=1.6,
+    )
+
+    for pos, win_rate, non_loss_rate, item in zip(y_positions, win_rates, non_loss_rates, ordered):
+        is_default = item.policy == "maskable_ppo_v11_conservative_3M"
+        label_color = "#ffffff" if is_default else "#dbe7f2"
+        glow = [
+            path_effects.Stroke(linewidth=3.5, foreground="#08111f"),
+            path_effects.Normal(),
+        ]
+        ax.text(
+            win_rate + 1.1,
+            pos + bar_height / 2,
+            f"{win_rate:.1f}%",
+            va="center",
+            ha="left",
+            color=label_color,
+            fontsize=11,
+            fontweight="bold" if is_default else "normal",
+            path_effects=glow,
+        )
+        ax.text(
+            non_loss_rate + 1.1,
+            pos - bar_height / 2,
+            f"{non_loss_rate:.1f}%",
+            va="center",
+            ha="left",
+            color=label_color,
+            fontsize=11,
+            fontweight="bold" if is_default else "normal",
+            path_effects=glow,
+        )
+        if is_default:
+            ax.text(
+                2,
+                pos + 0.57,
+                "DEFAULT",
+                color="#07111f",
+                fontsize=9,
+                fontweight="bold",
+                bbox={
+                    "boxstyle": "round,pad=0.28,rounding_size=0.14",
+                    "facecolor": "#e9f871",
+                    "edgecolor": "#e9f871",
+                },
+            )
+
+    panel.set_xticks([])
+    panel.set_yticks([])
+    panel.text(
+        0.07,
+        0.93,
+        "Aggregate scoreboard",
+        transform=panel.transAxes,
+        color=strong_text,
+        fontsize=17,
+        fontweight="bold",
+    )
+    panel.text(
+        0.07,
+        0.875,
+        "Record is wins-losses-draws across 2,000 episodes.",
+        transform=panel.transAxes,
+        color=muted_text,
+        fontsize=10,
+    )
+
+    row_top = 0.78
+    row_gap = 0.145
+    for index, item in enumerate(reversed(ordered)):
+        y = row_top - index * row_gap
+        is_default = item.policy == "maskable_ppo_v11_conservative_3M"
+        accent = "#e9f871" if is_default else "#344966"
+        panel.text(
+            0.07,
             y,
-            signed(value),
-            ha="center",
-            va="bottom" if value >= 0 else "top",
-            fontsize=8,
+            chart_label(item.policy),
+            transform=panel.transAxes,
+            color=strong_text,
+            fontsize=11,
+            fontweight="bold",
+        )
+        panel.plot(
+            [0.07, 0.93],
+            [y - 0.024, y - 0.024],
+            transform=panel.transAxes,
+            color=accent,
+            linewidth=2.2 if is_default else 0.8,
+            alpha=0.95 if is_default else 0.45,
+        )
+        panel.text(
+            0.07,
+            y - 0.065,
+            f"{item.wins}-{item.losses}-{item.draws}",
+            transform=panel.transAxes,
+            color="#f7fbff",
+            fontsize=15,
+            fontweight="bold",
+        )
+        panel.text(
+            0.48,
+            y - 0.058,
+            f"reward {signed(item.average_reward)}",
+            transform=panel.transAxes,
+            color="#b8c7d9",
+            fontsize=10,
+        )
+        panel.text(
+            0.73,
+            y - 0.058,
+            f"{item.average_turns:.1f} turns",
+            transform=panel.transAxes,
+            color="#b8c7d9",
+            fontsize=10,
         )
 
-    for ax in axes:
-        ax.tick_params(axis="x", rotation=25, labelsize=8)
+    best = max(aggregate_stats(stats), key=lambda item: item.win_rate)
+    type_aware = next(item for item in aggregate_stats(stats) if item.policy == "type_aware_policy")
+    delta = (best.win_rate - type_aware.win_rate) * 100
+    fig.text(
+        0.77,
+        0.852,
+        f"+{delta:.1f} pts over Type aware",
+        color="#08111f",
+        fontsize=13,
+        fontweight="bold",
+        ha="center",
+        bbox={
+            "boxstyle": "round,pad=0.5,rounding_size=0.18",
+            "facecolor": "#e9f871",
+            "edgecolor": "#e9f871",
+        },
+    )
 
-    fig.suptitle("ShowdownRL corrected-simulator benchmark", fontsize=15, fontweight="bold")
-    fig.tight_layout(rect=[0, 0, 1, 0.94])
     ASSETS_DIR.mkdir(parents=True, exist_ok=True)
-    fig.savefig(CHART_PATH, dpi=170)
+    fig.savefig(CHART_PATH, dpi=180, facecolor=fig.get_facecolor())
     plt.close(fig)
 
 

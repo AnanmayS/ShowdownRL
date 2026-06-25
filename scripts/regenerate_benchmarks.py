@@ -15,11 +15,7 @@ EVALUATE = ROOT / "scripts" / "evaluate_model.py"
 PUBLISHED_CSV = ROOT / "docs" / "benchmarks" / "current_evaluation.csv"
 LEADERBOARD = ROOT / "docs" / "model_leaderboard.md"
 DEFAULT_MODELS = [
-    ROOT / "models" / "ppo_move_selection_v2_typed.zip",
-    ROOT / "models" / "ppo_move_selection_v3_rich.zip",
-    ROOT / "models" / "ppo_move_selection_v4_rich.zip",
-    ROOT / "models" / "ppo_move_selection_v5_rich_finetuned.zip",
-    ROOT / "models" / "maskable_ppo_move_selection_v6_rich.zip",
+    ROOT / "models" / "maskable_ppo_v11_conservative_3M.zip",
 ]
 DEFAULT_SEEDS = [42, 99]
 
@@ -104,7 +100,7 @@ def policy_label(policy: str) -> str:
         "ppo_move_selection_v3_rich": "PPO v3 rich",
         "ppo_move_selection_v4_rich": "PPO v4 rich",
         "ppo_move_selection_v5_rich_finetuned": "PPO v5 fine-tuned",
-        "maskable_ppo_move_selection_v6_rich": "Maskable PPO v6",
+        "maskable_ppo_v11_conservative_3M": "Maskable PPO v11 (bench simulator)",
     }
     return labels.get(policy, policy.replace("_", " ").title())
 

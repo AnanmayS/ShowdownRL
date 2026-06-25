@@ -54,7 +54,7 @@ class SimpleEnvTests(unittest.TestCase):
         self.assertEqual(env._opponent_action(), 3)
 
     def test_opponent_does_not_retaliate_after_fainting(self) -> None:
-        env = SimplePokemonMoveEnv(opponent_policy="max_damage", seed=6)
+        env = SimplePokemonMoveEnv(opponent_policy="max_damage", max_bench_size=0, seed=6)
         env.reset()
         env.own_hp = 0.2
         env.opponent_hp = 0.1
@@ -91,7 +91,7 @@ class SimpleEnvTests(unittest.TestCase):
         self.fail("rich mechanics did not generate a support move in deterministic sample")
 
     def test_action_masks_filter_state_dependent_no_ops(self) -> None:
-        env = SimplePokemonMoveEnv(mechanics="rich", seed=3)
+        env = SimplePokemonMoveEnv(mechanics="rich", max_bench_size=0, seed=3)
         env.reset()
         env.own_hp = 1.0
         env.own_attack_boost = 2.2
@@ -104,10 +104,12 @@ class SimpleEnvTests(unittest.TestCase):
             (0.0, 1.0, 0.0, 1.0, 1.0, "status"),
         ]
 
-        self.assertEqual(env.action_masks().tolist(), [True, False, False, False])
+        masks = env.action_masks().tolist()
+        self.assertEqual(masks[:4], [True, False, False, False])
+        self.assertTrue(all(not m for m in masks[4:]))
 
     def test_action_masks_keep_fallback_action_when_all_filtered(self) -> None:
-        env = SimplePokemonMoveEnv(mechanics="rich", seed=4)
+        env = SimplePokemonMoveEnv(mechanics="rich", max_bench_size=0, seed=4)
         env.reset()
         env.own_hp = 1.0
         env.own_attack_boost = 2.2

@@ -34,7 +34,7 @@ ACTIVATION_FNS = {
     "tanh": torch.nn.Tanh,
     "elu": torch.nn.ELU,
 }
-_LEAGUE_MODEL_CACHE: dict[Path, PPO] = {}
+_LEAGUE_MODEL_CACHE: dict[Path, Any] = {}
 
 
 def positive_int(value: str) -> int:
@@ -101,7 +101,7 @@ class OpponentWrapper:
         self.fallback_opponent_action = fallback_opponent_action
         self.self_play_prob = self_play_prob
 
-    def _opponent_obs(self):
+    def _opponent_obs_and_masks(self):
         env = self.env
         swapped = {
             "own_hp": env.own_hp,
@@ -127,7 +127,7 @@ class OpponentWrapper:
             )
             env.bench, env.opponent_bench = env.opponent_bench, env.bench
             env.active_pokemon, env.opponent_active = env.opponent_active, env.active_pokemon
-            return env._get_obs()
+            return env._get_obs(), env.action_masks()
         finally:
             for name, value in swapped.items():
                 setattr(env, name, value)
@@ -135,7 +135,11 @@ class OpponentWrapper:
     def _opponent_action(self) -> int:
         if self.env.rng.random() >= self.self_play_prob:
             return self.fallback_opponent_action()
-        action, _ = self.model.predict(self._opponent_obs(), deterministic=False)
+        obs, action_masks = self._opponent_obs_and_masks()
+        predict_kwargs = {"deterministic": False}
+        if "sb3_contrib" in type(self.model).__module__:
+            predict_kwargs["action_masks"] = action_masks
+        action, _ = self.model.predict(obs, **predict_kwargs)
         return int(action)
 
 
@@ -158,7 +162,12 @@ def load_league_model(model_path: Path | None):
         return None
     cache_key = model_path.resolve()
     if cache_key not in _LEAGUE_MODEL_CACHE:
-        _LEAGUE_MODEL_CACHE[cache_key] = PPO.load(str(model_path))
+        if "maskable" in model_path.stem:
+            from sb3_contrib import MaskablePPO
+
+            _LEAGUE_MODEL_CACHE[cache_key] = MaskablePPO.load(str(model_path))
+        else:
+            _LEAGUE_MODEL_CACHE[cache_key] = PPO.load(str(model_path))
     return _LEAGUE_MODEL_CACHE[cache_key]
 
 

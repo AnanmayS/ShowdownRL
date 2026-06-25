@@ -20,12 +20,16 @@ from showdownrl.ai import (
 MODEL_FILENAME = "ppo_move_selection_v2_typed.zip"
 RICH_MODEL_FILENAME = "ppo_move_selection_v3_rich.zip"
 FINETUNED_MODEL_FILENAME = "ppo_move_selection_v5_rich_finetuned.zip"
-MASKABLE_MODEL_FILENAME = "maskable_ppo_move_selection_v6_rich.zip"
+MASKABLE_MODEL_FILENAME = "maskable_ppo_v11_conservative_3M.zip"
+LEGACY_MASKABLE_MODEL_FILENAME = "maskable_ppo_move_selection_v6_rich.zip"
 LEGACY_MODEL_FILENAME = "ppo_move_selection_v1.zip"
 DEFAULT_MODEL_PATH = Path(__file__).resolve().parent.parent / "models" / MODEL_FILENAME
 SIMPLE_OBS_SIZE = 14
 RICH_FEATURES_PER_MOVE = 8
 RICH_OBS_SIZE = SIMPLE_OBS_SIZE + 4 * RICH_FEATURES_PER_MOVE
+DEFAULT_MAX_BENCH_SIZE = 3
+BENCH_FEATURES_PER_POKEMON = 20
+TEAM_RICH_OBS_SIZE = RICH_OBS_SIZE + DEFAULT_MAX_BENCH_SIZE * BENCH_FEATURES_PER_POKEMON
 
 
 def model_search_paths(filename: str = RICH_MODEL_FILENAME) -> list[Path]:
@@ -43,6 +47,7 @@ def model_search_paths(filename: str = RICH_MODEL_FILENAME) -> list[Path]:
 def default_model_path() -> Path:
     candidates = [
         *model_search_paths(MASKABLE_MODEL_FILENAME),
+        *model_search_paths(LEGACY_MASKABLE_MODEL_FILENAME),
         *model_search_paths(FINETUNED_MODEL_FILENAME),
         *model_search_paths(RICH_MODEL_FILENAME),
         *model_search_paths(MODEL_FILENAME),
@@ -251,6 +256,25 @@ def turn_state_to_rich_observation(
     return observation
 
 
+def turn_state_to_team_observation(
+    turn_state: dict[str, Any] | None,
+    moves: list[dict[str, Any]],
+) -> list[float]:
+    """Project live state into the 106-float bench-aware simulator observation."""
+    state = turn_state or {}
+    observation = turn_state_to_rich_observation(state, moves)
+    switch_options = list((state.get("switch_options") or [])[:DEFAULT_MAX_BENCH_SIZE])
+    observation.extend([0.0] * (TEAM_RICH_OBS_SIZE - len(observation)))
+    bench_base = RICH_OBS_SIZE
+    for index, option in enumerate(switch_options):
+        slot_base = bench_base + index * BENCH_FEATURES_PER_POKEMON
+        observation[slot_base] = _hp_fraction(option)
+        switch_types = _normalized_types(option.get("types"))
+        for type_index, pokemon_type in enumerate(TYPE_CHART):
+            observation[slot_base + 1 + type_index] = 1.0 if pokemon_type in switch_types else 0.0
+    return observation
+
+
 def _rank_with_selected_first(
     moves: list[dict[str, Any]],
     turn_state: dict[str, Any] | None,
@@ -274,6 +298,8 @@ class PPOMovePolicy:
             self.model = model
             model_shape = getattr(getattr(model, "observation_space", None), "shape", ())
             self.observation_size = int(model_shape[0]) if model_shape else RICH_OBS_SIZE
+            action_space = getattr(model, "action_space", None)
+            self.action_size = int(getattr(action_space, "n", 4) or 4)
             return
 
         if not self.model_path.exists():
@@ -308,13 +334,16 @@ class PPOMovePolicy:
                         f"Could not load PPO model: {ppo_error}; MaskablePPO fallback also failed: {maskable_error}"
                     ) from maskable_error
         self.observation_size = int(getattr(self.model.observation_space, "shape", (SIMPLE_OBS_SIZE,))[0])
+        self.action_size = int(getattr(getattr(self.model, "action_space", None), "n", 4) or 4)
 
     def choose(self, moves: list[dict[str, Any]], turn_state: dict[str, Any] | None) -> PolicyChoice:
         fallback = ranked_moves(moves, turn_state)
         if not moves:
             return PolicyChoice(fallback, "heuristic", "no available moves")
 
-        if getattr(self, "observation_size", SIMPLE_OBS_SIZE) > SIMPLE_OBS_SIZE:
+        if getattr(self, "observation_size", SIMPLE_OBS_SIZE) > RICH_OBS_SIZE:
+            observation = turn_state_to_team_observation(turn_state, moves)
+        elif getattr(self, "observation_size", SIMPLE_OBS_SIZE) > SIMPLE_OBS_SIZE:
             observation = turn_state_to_rich_observation(turn_state, moves)
         else:
             observation = turn_state_to_observation(turn_state, moves)
@@ -329,7 +358,7 @@ class PPOMovePolicy:
             if "sb3_contrib" in type(self.model).__module__:
                 import numpy as np
 
-                action_masks = np.zeros(4, dtype=bool)
+                action_masks = np.zeros(getattr(self, "action_size", 4), dtype=bool)
                 action_masks[: min(len(moves), 4)] = True
                 predict_kwargs["action_masks"] = action_masks
             action, _ = self.model.predict(model_observation, **predict_kwargs)

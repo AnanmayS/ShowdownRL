@@ -19,12 +19,11 @@ share them.
 
 ## Current AI Benchmark
 
-The default trained policy is
-`maskable_ppo_v11_conservative_3M.zip`. It trains MaskablePPO with a **bench simulator**
-that includes switching and benched Pokemon (7-action space: 4 moves + up to 3 bench
-slots). The agent uses a residual architecture ([256×4], ELU activation) with
-conservative PPO hyperparameters (lr=1e-4, clip=0.1) and a rich 86-dimension
-observation that includes bench Pokemon HP, types, and recovery move flags.
+The default trained bench-simulator policy is
+`maskable_ppo_v11_conservative_3M.zip`. It trains MaskablePPO with a 7-action
+space: 4 move actions plus up to 3 bench-switch actions. The 106-feature rich
+observation includes active HP, per-move damage context, support-move flags, and
+bench Pokemon HP/type context.
 
 ![Policy comparison chart](docs/assets/ai_policy_comparison.png)
 

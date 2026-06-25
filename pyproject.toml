@@ -52,4 +52,5 @@ models = [
   "models/ppo_move_selection_v4_rich.zip",
   "models/ppo_move_selection_v5_rich_finetuned.zip",
   "models/maskable_ppo_move_selection_v6_rich.zip",
+  "models/maskable_ppo_v11_conservative_3M.zip",
 ]

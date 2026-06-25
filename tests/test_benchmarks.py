@@ -14,13 +14,13 @@ class BenchmarkScriptTests(unittest.TestCase):
 
         self.assertIn("--mechanics rich", joined)
         self.assertIn("--opponent-policy type_aware", joined)
-        self.assertIn("--model models/ppo_move_selection_v3_rich.zip", joined)
+        self.assertIn("--model models/maskable_ppo_v11_conservative_3M.zip", joined)
 
     def test_writes_csv_and_leaderboard_with_metadata(self) -> None:
         rows = [
             {
                 "scenario": "rich_type_aware_seed42",
-                "policy": "ppo_move_selection_v3_rich",
+                "policy": "maskable_ppo_v11_conservative_3M",
                 "episodes": "10",
                 "wins": "4",
                 "losses": "3",
@@ -33,7 +33,7 @@ class BenchmarkScriptTests(unittest.TestCase):
                 "mechanics": "rich",
                 "opponent_policy": "type_aware",
                 "observation_mode": "rich",
-                "model_path": "models/ppo_move_selection_v3_rich.zip",
+                "model_path": "models/maskable_ppo_v11_conservative_3M.zip",
                 "git_sha": "abc123",
             }
         ]
@@ -47,7 +47,7 @@ class BenchmarkScriptTests(unittest.TestCase):
 
             self.assertIn("git_sha", csv_path.read_text(encoding="utf-8").splitlines()[0])
             leaderboard = leaderboard_path.read_text(encoding="utf-8")
-            self.assertIn("PPO v3 rich", leaderboard)
+            self.assertIn("Maskable PPO v11 (bench simulator)", leaderboard)
             self.assertIn("abc123", leaderboard)
 
 

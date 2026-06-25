@@ -20,6 +20,17 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 
+def short_label(policy: str) -> str:
+    """Return a compact display label for a policy."""
+    return {
+        "random_policy": "Random",
+        "max_damage_policy": "Max Damage",
+        "type_aware_policy": "Type Aware",
+        "maskable_ppo_v11_conservative_3M": "Maskable PPO v11",
+        "maskable_ppo_v12_selfplay": "Maskable PPO v12",
+    }.get(policy, policy.replace("_", " ").title())
+
+
 def main():
     results_dir = Path(__file__).resolve().parent.parent / "results"
     csv_path = results_dir / "evaluation.csv"
@@ -32,28 +43,29 @@ def main():
 
     df = pd.read_csv(csv_path)
     policies = df["policy"].tolist()
+    labels = [short_label(p) for p in policies]
 
     # --- Win Rate ---
-    fig, ax = plt.subplots(figsize=(8, 5))
-    bars = ax.bar(policies, df["win_rate"], color="steelblue", edgecolor="white")
+    fig, ax = plt.subplots(figsize=(10, 5))
+    bars = ax.bar(labels, df["win_rate"], color="steelblue", edgecolor="white")
     ax.set_title("Win Rate by Policy", fontsize=14)
-    ax.set_xlabel("Policy")
     ax.set_ylabel("Win Rate")
     ax.set_ylim(0, 1)
+    ax.tick_params(axis="x", rotation=30, labelsize=9)
     for bar, val in zip(bars, df["win_rate"]):
         ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.02,
-                f"{val:.2%}", ha="center", va="bottom", fontsize=10)
+                f"{val:.1%}", ha="center", va="bottom", fontsize=10)
     plt.tight_layout()
     fig.savefig(results_dir / "win_rate_by_policy.png", dpi=150)
     plt.close(fig)
     print(f"Saved {results_dir / 'win_rate_by_policy.png'}")
 
     # --- Average Reward ---
-    fig, ax = plt.subplots(figsize=(8, 5))
-    bars = ax.bar(policies, df["average_reward"], color="darkorange", edgecolor="white")
+    fig, ax = plt.subplots(figsize=(10, 5))
+    bars = ax.bar(labels, df["average_reward"], color="darkorange", edgecolor="white")
     ax.set_title("Average Reward by Policy", fontsize=14)
-    ax.set_xlabel("Policy")
     ax.set_ylabel("Average Reward")
+    ax.tick_params(axis="x", rotation=30, labelsize=9)
     ax.axhline(y=0, color="gray", linestyle="--", linewidth=0.8)
     for bar, val in zip(bars, df["average_reward"]):
         y_pos = bar.get_height() + 0.02 if val >= 0 else bar.get_height() - 0.08
@@ -65,11 +77,11 @@ def main():
     print(f"Saved {results_dir / 'average_reward_by_policy.png'}")
 
     # --- Average Turns ---
-    fig, ax = plt.subplots(figsize=(8, 5))
-    bars = ax.bar(policies, df["average_turns"], color="seagreen", edgecolor="white")
+    fig, ax = plt.subplots(figsize=(10, 5))
+    bars = ax.bar(labels, df["average_turns"], color="seagreen", edgecolor="white")
     ax.set_title("Average Turns by Policy", fontsize=14)
-    ax.set_xlabel("Policy")
     ax.set_ylabel("Average Turns")
+    ax.tick_params(axis="x", rotation=30, labelsize=9)
     for bar, val in zip(bars, df["average_turns"]):
         ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.3,
                 f"{val:.1f}", ha="center", va="bottom", fontsize=10)

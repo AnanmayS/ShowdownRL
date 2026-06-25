@@ -6,12 +6,12 @@ The opponent can pick randomly or use a stronger baseline policy.
 
 State:
     simple observation: own_hp, opponent_hp, then 4 moves x
-        (base_power, accuracy, damage_multiplier)
+        (base_power, accuracy, damage_multiplier), then bench info
     rich observation: simple observation plus 4 moves x
         (expected_damage, STAB, super-effective, resisted/immune,
         finish_flag, recovery_flag, setup_flag, status_flag)
 
-Actions: Discrete(4) — choose move index 0–3.
+Actions: moves 0–3, switches 4+.
 
 Reward:
     + (opponent HP decrease) for hitting the opponent
@@ -19,7 +19,7 @@ Reward:
     +1 for winning
     -1 for losing
 
-Episode ends when either Pokemon faints or max_turns is reached.
+Episode ends when either team has no living Pokemon or max_turns is reached.
 """
 
 import gymnasium
@@ -29,9 +29,15 @@ from gymnasium import spaces
 from showdownrl.policy_bridge import TYPE_CHART
 
 POKEMON_TYPES = tuple(TYPE_CHART.keys())
-SIMPLE_OBS_SIZE = 14
+MOVE_ACTIONS = 4
+SWITCH_ACTION = 4
+DEFAULT_MAX_BENCH_SIZE = 3
+BENCH_FEATURES_PER_POKEMON = 20
+BASE_SIMPLE_OBS_SIZE = 14
+SIMPLE_OBS_SIZE = BASE_SIMPLE_OBS_SIZE + DEFAULT_MAX_BENCH_SIZE * BENCH_FEATURES_PER_POKEMON
 RICH_FEATURES_PER_MOVE = 8
-RICH_OBS_SIZE = SIMPLE_OBS_SIZE + 4 * RICH_FEATURES_PER_MOVE
+BASE_RICH_OBS_SIZE = BASE_SIMPLE_OBS_SIZE + MOVE_ACTIONS * RICH_FEATURES_PER_MOVE
+RICH_OBS_SIZE = BASE_RICH_OBS_SIZE + DEFAULT_MAX_BENCH_SIZE * BENCH_FEATURES_PER_POKEMON
 ROLE_ATTACK = "attack"
 ROLE_RECOVER = "recover"
 ROLE_SETUP = "setup"
@@ -48,6 +54,7 @@ class SimplePokemonMoveEnv(gymnasium.Env):
         opponent_policy: str = "random",
         mechanics: str = "toy",
         observation_mode: str = "simple",
+        max_bench_size: int = DEFAULT_MAX_BENCH_SIZE,
     ):
         super().__init__()
 
@@ -55,13 +62,15 @@ class SimplePokemonMoveEnv(gymnasium.Env):
         self.opponent_policy = opponent_policy
         self.mechanics = mechanics
         self.observation_mode = observation_mode
+        self.max_bench_size = max(0, int(max_bench_size))
 
-        obs_size = RICH_OBS_SIZE if observation_mode == "rich" else SIMPLE_OBS_SIZE
+        base_obs_size = BASE_RICH_OBS_SIZE if observation_mode == "rich" else BASE_SIMPLE_OBS_SIZE
+        obs_size = base_obs_size + self.max_bench_size * BENCH_FEATURES_PER_POKEMON
         self.observation_space = spaces.Box(
             low=0.0, high=4.0, shape=(obs_size,), dtype=np.float32
         )
 
-        self.action_space = spaces.Discrete(4)
+        self.action_space = spaces.Discrete(MOVE_ACTIONS + self.max_bench_size)
 
         self.rng = np.random.default_rng(seed)
 
@@ -74,6 +83,10 @@ class SimplePokemonMoveEnv(gymnasium.Env):
         self.opponent_types = []
         self.own_attack_boost = 1.0
         self.opponent_attack_boost = 1.0
+        self.bench = []
+        self.opponent_bench = []
+        self.active_pokemon = None
+        self.opponent_active = None
         self.current_opponent_policy = opponent_policy
         self.turn = 0
 
@@ -155,9 +168,68 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             return self._generate_typed_moves(self.opponent_types, self.own_types)
         return self._generate_toy_moves()
 
+    def _make_pokemon(
+        self, types: list[str], defender_types: list[str], hp: float = 1.0
+    ) -> dict:
+        return {
+            "hp": hp,
+            "types": types,
+            "moves": self._generate_typed_moves(types, defender_types),
+            "attack_boost": 1.0,
+        }
+
+    def _sync_active_aliases(self) -> None:
+        if self.active_pokemon is not None:
+            self.own_hp = self.active_pokemon["hp"]
+            self.moves = self.active_pokemon["moves"]
+            self.own_types = self.active_pokemon["types"]
+            self.own_attack_boost = self.active_pokemon["attack_boost"]
+        if self.opponent_active is not None:
+            self.opponent_hp = self.opponent_active["hp"]
+            self.opponent_moves = self.opponent_active["moves"]
+            self.opponent_types = self.opponent_active["types"]
+            self.opponent_attack_boost = self.opponent_active["attack_boost"]
+
+    def _sync_active_pokemon(self) -> None:
+        if self.active_pokemon is not None:
+            self.active_pokemon["hp"] = self.own_hp
+            self.active_pokemon["moves"] = self.moves
+            self.active_pokemon["types"] = self.own_types
+            self.active_pokemon["attack_boost"] = self.own_attack_boost
+        if self.opponent_active is not None:
+            self.opponent_active["hp"] = self.opponent_hp
+            self.opponent_active["moves"] = self.opponent_moves
+            self.opponent_active["types"] = self.opponent_types
+            self.opponent_active["attack_boost"] = self.opponent_attack_boost
+
+    def _first_living_bench(self, bench: list[dict]) -> dict | None:
+        for pokemon in bench:
+            if pokemon["hp"] > 0:
+                return pokemon
+        return None
+
+    def _team_has_living_pokemon(self, active: dict | None, bench: list[dict]) -> bool:
+        return (
+            active is not None and active["hp"] > 0
+        ) or self._first_living_bench(bench) is not None
+
+    def _auto_switch_fainted(self) -> None:
+        if self.active_pokemon is not None and self.active_pokemon["hp"] <= 0:
+            replacement = self._first_living_bench(self.bench)
+            if replacement is not None:
+                self.active_pokemon = replacement
+        if self.opponent_active is not None and self.opponent_active["hp"] <= 0:
+            replacement = self._first_living_bench(self.opponent_bench)
+            if replacement is not None:
+                self.opponent_active = replacement
+        self._sync_active_aliases()
+
     def _get_obs(self):
         """Build the observation vector."""
-        size = RICH_OBS_SIZE if self.observation_mode == "rich" else SIMPLE_OBS_SIZE
+        base_size = (
+            BASE_RICH_OBS_SIZE if self.observation_mode == "rich" else BASE_SIMPLE_OBS_SIZE
+        )
+        size = base_size + self.max_bench_size * BENCH_FEATURES_PER_POKEMON
         obs = np.zeros(size, dtype=np.float32)
         obs[0] = self.own_hp
         obs[1] = self.opponent_hp
@@ -168,7 +240,7 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             obs[base + 1] = acc
             obs[base + 2] = multiplier
             if self.observation_mode == "rich":
-                rich_base = SIMPLE_OBS_SIZE + i * RICH_FEATURES_PER_MOVE
+                rich_base = BASE_SIMPLE_OBS_SIZE + i * RICH_FEATURES_PER_MOVE
                 expected_damage = bp * acc * multiplier * 0.25
                 obs[rich_base] = min(4.0, bp * acc * multiplier)
                 obs[rich_base + 1] = 1.0 if stab > 1.0 else 0.0
@@ -178,6 +250,17 @@ class SimplePokemonMoveEnv(gymnasium.Env):
                 obs[rich_base + 5] = 1.0 if role == ROLE_RECOVER else 0.0
                 obs[rich_base + 6] = 1.0 if role == ROLE_SETUP else 0.0
                 obs[rich_base + 7] = 1.0 if role == ROLE_STATUS else 0.0
+        bench_base = base_size
+        for index, pokemon in enumerate(self.bench[: self.max_bench_size]):
+            slot_base = bench_base + index * BENCH_FEATURES_PER_POKEMON
+            obs[slot_base] = pokemon["hp"]
+            for type_index, pokemon_type in enumerate(POKEMON_TYPES):
+                obs[slot_base + 1 + type_index] = 1.0 if pokemon_type in pokemon["types"] else 0.0
+            obs[slot_base + 19] = (
+                1.0
+                if any(self._move_values(move)[5] == ROLE_RECOVER for move in pokemon["moves"])
+                else 0.0
+            )
         return obs
 
     def _get_info(self):
@@ -189,11 +272,13 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             "opponent_types": self.opponent_types,
             "mechanics": self.mechanics,
             "observation_mode": self.observation_mode,
+            "bench_size": len(self.bench),
+            "opponent_bench_size": len(self.opponent_bench),
         }
 
     def action_masks(self) -> np.ndarray:
         """Return a state-dependent valid-action mask for MaskablePPO."""
-        masks = np.ones(4, dtype=bool)
+        masks = np.ones(MOVE_ACTIONS + self.max_bench_size, dtype=bool)
         if not self.moves:
             return masks
 
@@ -209,11 +294,22 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             elif role == ROLE_STATUS:
                 masks[index] = self.opponent_attack_boost > 0.45 and self.opponent_hp >= 0.25
 
+        for index in range(self.max_bench_size):
+            masks[SWITCH_ACTION + index] = (
+                index < len(self.bench) and self.bench[index]["hp"] > 0
+            )
+
         if not masks.any():
-            return np.ones(4, dtype=bool)
+            return np.ones(MOVE_ACTIONS + self.max_bench_size, dtype=bool)
         return masks
 
     def _opponent_action(self) -> int:
+        living_bench_indices = [
+            index for index, pokemon in enumerate(self.opponent_bench) if pokemon["hp"] > 0
+        ]
+        if living_bench_indices and self.rng.random() < 0.10:
+            return SWITCH_ACTION + int(self.rng.choice(living_bench_indices))
+
         policy = self.current_opponent_policy
         opponent_moves = self.opponent_moves or self.moves
         if policy == "max_damage":
@@ -229,7 +325,7 @@ class SimplePokemonMoveEnv(gymnasium.Env):
                 else:
                     scores.append(bp * acc * multiplier)
             return int(np.argmax(scores))
-        return int(self.rng.integers(0, 4))
+        return int(self.rng.integers(0, MOVE_ACTIONS))
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -249,13 +345,44 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             )
         else:
             self.current_opponent_policy = self.opponent_policy
-        self.moves = self._generate_moves()
-        self.opponent_moves = self._generate_opponent_moves()
+
+        if self.max_bench_size == 0:
+            self.active_pokemon = None
+            self.opponent_active = None
+            self.bench = []
+            self.opponent_bench = []
+            self.moves = self._generate_moves()
+            self.opponent_moves = self._generate_opponent_moves()
+        else:
+            own_type_sets = [self._sample_types() for _ in range(1 + self.max_bench_size)]
+            opponent_type_sets = [self._sample_types() for _ in range(1 + self.max_bench_size)]
+            self.active_pokemon = self._make_pokemon(own_type_sets[0], opponent_type_sets[0])
+            self.opponent_active = self._make_pokemon(opponent_type_sets[0], own_type_sets[0])
+            self.bench = [
+                self._make_pokemon(types, opponent_type_sets[0])
+                for types in own_type_sets[1:]
+            ]
+            self.opponent_bench = [
+                self._make_pokemon(types, own_type_sets[0])
+                for types in opponent_type_sets[1:]
+            ]
+            self._sync_active_aliases()
         self.turn = 0
 
         return self._get_obs(), self._get_info()
 
     def _apply_action(self, action: int, *, is_own: bool) -> None:
+        if action >= SWITCH_ACTION:
+            bench = self.bench if is_own else self.opponent_bench
+            bench_index = action - SWITCH_ACTION
+            if bench_index < len(bench) and bench[bench_index]["hp"] > 0:
+                if is_own:
+                    self.active_pokemon = bench[bench_index]
+                else:
+                    self.opponent_active = bench[bench_index]
+                self._sync_active_aliases()
+            return
+
         moves = self.moves if is_own else (self.opponent_moves or self.moves)
         bp, acc, multiplier, _, _, role = self._move_values(moves[action])
         if self.rng.random() > acc:
@@ -271,6 +398,7 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             else:
                 damage_dealt = bp * acc * multiplier * self.own_attack_boost * 0.25
                 self.opponent_hp = max(0.0, self.opponent_hp - damage_dealt)
+            self._sync_active_pokemon()
             return
 
         if role == ROLE_RECOVER:
@@ -283,29 +411,42 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             damage_taken = bp * acc * multiplier * self.opponent_attack_boost * 0.25
             self.own_hp = max(0.0, self.own_hp - damage_taken)
 
+        self._sync_active_pokemon()
+
     def step(self, action):
         # Clamp action to valid range
-        action = min(max(int(action), 0), 3)
+        action = min(max(int(action), 0), self.action_space.n - 1)
 
-        prev_own = self.own_hp
         prev_opp = self.opponent_hp
         prev_own_boost = self.own_attack_boost
         prev_opp_boost = self.opponent_attack_boost
-        bp, acc, multiplier, _, _, role = self._move_values(self.moves[action])
-        expected_damage = bp * acc * multiplier * prev_own_boost * 0.25
+        is_switch = action >= SWITCH_ACTION
+        role = None
+        expected_damage = 0.0
 
         self._apply_action(action, is_own=True)
+        prev_own = self.own_hp
+
+        if not is_switch:
+            bp, acc, multiplier, _, _, role = self._move_values(self.moves[action])
+            expected_damage = bp * acc * multiplier * prev_own_boost * 0.25
 
         # --- Opponent attack ---
         if self.opponent_hp > 0:
             opp_action = self._opponent_action()
             self._apply_action(opp_action, is_own=False)
 
+        post_own_hp = self.own_hp
+        post_opp_hp = self.opponent_hp
+        self._auto_switch_fainted()
+
         # --- Reward ---
-        opp_delta = max(0.0, prev_opp - self.opponent_hp)
-        own_delta = max(0.0, prev_own - self.own_hp)
+        opp_delta = max(0.0, prev_opp - post_opp_hp)
+        own_delta = max(0.0, prev_own - post_own_hp)
         reward = opp_delta - own_delta - 0.01
-        if role == ROLE_ATTACK and expected_damage >= prev_opp:
+        if is_switch:
+            reward -= 0.01
+        elif role == ROLE_ATTACK and expected_damage >= prev_opp:
             reward += 0.18
         elif role == ROLE_RECOVER:
             if prev_own <= 0.55:
@@ -325,10 +466,22 @@ class SimplePokemonMoveEnv(gymnasium.Env):
 
         # --- Terminal conditions ---
         terminated = False
-        if self.opponent_hp <= 0:
+        opponent_lost = (
+            self.opponent_hp <= 0
+            if self.max_bench_size == 0
+            else not self._team_has_living_pokemon(
+                self.opponent_active, self.opponent_bench
+            )
+        )
+        own_lost = (
+            self.own_hp <= 0
+            if self.max_bench_size == 0
+            else not self._team_has_living_pokemon(self.active_pokemon, self.bench)
+        )
+        if opponent_lost:
             reward += 1.0
             terminated = True
-        elif self.own_hp <= 0:
+        elif own_lost:
             reward -= 1.0
             terminated = True
 

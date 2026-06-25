@@ -19,34 +19,31 @@ share them.
 
 ## Current AI Benchmark
 
-The default trained simulator policy is
-`maskable_ppo_move_selection_v6_rich.zip`. It trains MaskablePPO with
-state-dependent action masks that filter tactical no-op moves such as full-HP
-recovery, over-stacking setup, and repeated status drops.
-The rich PPO input extends the original 14-feature observation with per-move
-context for expected damage, STAB, type advantage, finish ranges, recovery,
-setup, and status moves.
+The default trained policy is
+`maskable_ppo_v11_conservative_3M.zip`. It trains MaskablePPO with a **bench simulator**
+that includes switching and benched Pokemon (7-action space: 4 moves + up to 3 bench
+slots). The agent uses a residual architecture ([256×4], ELU activation) with
+conservative PPO hyperparameters (lr=1e-4, clip=0.1) and a rich 86-dimension
+observation that includes bench Pokemon HP, types, and recovery move flags.
 
 ![Policy comparison chart](docs/assets/ai_policy_comparison.png)
 
-This chart is generated from the published benchmark data in
+This chart and table are generated from the published benchmark data in
 [docs/benchmarks/current_evaluation.csv](docs/benchmarks/current_evaluation.csv).
-It summarizes the two rich/type-aware evaluation seeds, with 1,000 simulator
-episodes per seed. The benchmark uses the corrected simulator where the
-opponent receives its own hidden move set instead of reusing the agent's moves.
+Each seed runs 1,000 simulator episodes against the `type_aware` opponent.
+The benchmark uses the bench simulator where both sides can switch between
+active and benched Pokemon.
 
 | Scenario | Policy | Episodes | Record (W-D-L) | Win rate | Avg reward | Avg turns |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| Rich/type-aware seed 42 | Maskable PPO v6 | 1000 | 565-8-427 | 56.5% | +0.338 | 6.51 |
-| Rich/type-aware seed 42 | Fine-tuned PPO v5 | 1000 | 527-3-470 | 52.7% | +0.222 | 6.16 |
-| Rich/type-aware seed 42 | Trained PPO v3 | 1000 | 498-3-499 | 49.8% | +0.116 | 6.23 |
-| Rich/type-aware seed 42 | Type aware | 1000 | 494-0-506 | 49.4% | +0.149 | 5.58 |
-| Rich/type-aware seed 42 | Experimental PPO v4 | 1000 | 492-0-508 | 49.2% | +0.122 | 5.71 |
-| Rich/type-aware seed 99 | Maskable PPO v6 | 1000 | 559-9-432 | 55.9% | +0.312 | 6.63 |
-| Rich/type-aware seed 99 | Fine-tuned PPO v5 | 1000 | 523-4-473 | 52.3% | +0.206 | 6.17 |
-| Rich/type-aware seed 99 | Trained PPO v3 | 1000 | 494-4-502 | 49.4% | +0.102 | 6.25 |
-| Rich/type-aware seed 99 | Type aware | 1000 | 488-1-511 | 48.8% | +0.126 | 5.63 |
-| Rich/type-aware seed 99 | Experimental PPO v4 | 1000 | 485-1-514 | 48.5% | +0.097 | 5.77 |
+| Rich/type-aware seed 42 | Maskable PPO v11 | 1000 | 790-41-169 | 79.0% | +2.211 | 22.93 |
+| Rich/type-aware seed 42 | Type aware | 1000 | 752-26-222 | 75.2% | +1.905 | 22.10 |
+| Rich/type-aware seed 42 | Max damage | 1000 | 542-29-429 | 54.2% | +0.569 | 24.37 |
+| Rich/type-aware seed 42 | Random | 1000 | 319-137-544 | 31.9% | -1.822 | 31.64 |
+| Rich/type-aware seed 99 | Maskable PPO v11 | 1000 | 788-40-172 | 78.8% | +2.205 | 22.83 |
+| Rich/type-aware seed 99 | Type aware | 1000 | 753-25-222 | 75.3% | +1.900 | 22.00 |
+| Rich/type-aware seed 99 | Max damage | 1000 | 545-27-428 | 54.5% | +0.577 | 24.25 |
+| Rich/type-aware seed 99 | Random | 1000 | 323-155-522 | 32.3% | -1.806 | 31.99 |
 
 Records are shown as wins-draws-losses. See
 [docs/benchmarks/current_evaluation.csv](docs/benchmarks/current_evaluation.csv)
@@ -139,7 +136,7 @@ showdownrl live --debug-policy
 showdownrl live --policy ppo
 
 # Use a specific PPO checkpoint
-showdownrl live --policy ppo --model-path models/maskable_ppo_move_selection_v6_rich.zip
+showdownrl live --policy ppo --model-path models/maskable_ppo_v11_conservative_3M.zip
 
 # Do not write local battle stats
 showdownrl live --no-stats

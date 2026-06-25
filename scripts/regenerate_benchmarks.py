@@ -116,7 +116,7 @@ def write_leaderboard(rows: list[dict[str, str]], path: Path) -> None:
         "",
         "Generated from `docs/benchmarks/current_evaluation.csv`.",
         "",
-        "| Scenario | Policy | Episodes | Record | Win rate | Non-loss | Avg reward | Avg turns | Git SHA |",
+        "| Scenario | Policy | Episodes | Record (W-L-D) | Win rate | Non-loss | Avg reward | Avg turns | Git SHA |",
         "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
     ]
     for row in ordered:

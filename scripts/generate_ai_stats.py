@@ -56,6 +56,12 @@ def policy_label(policy: str) -> str:
         "ppo_move_selection_v4_rich": "PPO v4 rich",
         "ppo_move_selection_v5_rich_finetuned": "PPO v5 fine-tuned",
         "maskable_ppo_move_selection_v6_rich": "Maskable PPO v6",
+        "maskable_ppo_v7_selfplay_1M": "Maskable PPO v7 self-play",
+        "maskable_ppo_v8_typeaware_1M": "Maskable PPO v8 type-aware",
+        "maskable_ppo_v9_3M": "Maskable PPO v9",
+        "maskable_ppo_v10_conservative": "Maskable PPO v10 conservative",
+        "maskable_ppo_v11_conservative_3M": "Maskable PPO v11 (bench simulator)",
+        "maskable_ppo_v12_selfplay": "Maskable PPO v12 self-play",
     }
     return labels.get(policy, policy.replace("_", " ").title())
 
@@ -232,7 +238,7 @@ def build_report(stats: list[PolicyStats]) -> str:
     aggregates = aggregate_stats(stats)
     best = aggregates[0]
     default = next(
-        item for item in aggregates if item.policy == "maskable_ppo_move_selection_v6_rich"
+        item for item in aggregates if item.policy == "maskable_ppo_v11_conservative_3M"
     )
     csv_date = datetime.fromtimestamp(PUBLISHED_CSV.stat().st_mtime).strftime("%Y-%m-%d")
     git_shas = sorted({item.git_sha for item in stats})
@@ -246,7 +252,7 @@ This report summarizes the published benchmark in
 
 ## Current Result
 
-The default trained simulator policy is `maskable_ppo_move_selection_v6_rich.zip`.
+The default trained bench-simulator policy is `maskable_ppo_v11_conservative_3M.zip`.
 Across the fixed rich/type-aware evaluation seeds it recorded
 {default.wins}-{default.losses}-{default.draws} (W-L-D) over {default.episodes} episodes:
 {pct(default.win_rate)} win rate, {pct(default.non_loss_rate)} non-loss rate,

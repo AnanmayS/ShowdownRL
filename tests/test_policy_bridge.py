@@ -10,10 +10,13 @@ from showdownrl.policy_bridge import (
     RICH_MODEL_FILENAME,
     RICH_OBS_SIZE,
     PPOMovePolicy,
+    TEAM_RICH_OBS_SIZE,
+    TYPE_CHART,
     ranked_switches,
     model_search_paths,
     turn_state_to_observation,
     turn_state_to_rich_observation,
+    turn_state_to_team_observation,
     type_effectiveness,
 )
 
@@ -103,6 +106,22 @@ class PolicyBridgeTests(unittest.TestCase):
         self.assertEqual(obs[14 + 2], 1.0)  # super effective
         self.assertEqual(obs[14 + 4], 1.0)  # expected damage can finish
         self.assertEqual(obs[14 + 8 + 5], 1.0)  # recovery flag on second move
+
+    def test_team_observation_adds_switch_context(self) -> None:
+        obs = turn_state_to_team_observation(
+            {
+                "active": {"hp_percent": 90, "types": ["Water"]},
+                "opponent": {"hp_percent": 80, "types": ["Fire"]},
+                "switch_options": [
+                    {"name": "Gyarados", "hp_percent": 75, "types": ["Water", "Flying"]},
+                ],
+            },
+            [{"name": "Surf", "type": "Water", "text": "Power 90 Accuracy 100"}],
+        )
+
+        self.assertEqual(len(obs), TEAM_RICH_OBS_SIZE)
+        self.assertEqual(obs[RICH_OBS_SIZE], 0.75)
+        self.assertEqual(obs[RICH_OBS_SIZE + 1 + list(TYPE_CHART).index("water")], 1.0)
 
     def test_ppo_policy_selects_predicted_available_move(self) -> None:
         policy = PPOMovePolicy(model=FakeModel(1))

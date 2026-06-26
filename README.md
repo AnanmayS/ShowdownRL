@@ -19,6 +19,10 @@ share them.
 
 ## Current AI Benchmark
 
+<video src="docs/assets/demo_battle.webm" controls width="100%" poster="docs/assets/ai_policy_comparison.png">
+  Your browser doesn't support the video tag. <a href="docs/assets/demo_battle.webm">Download the demo video</a>.
+</video>
+
 The default trained bench-simulator policy is
 `maskable_ppo_v11_conservative_3M.zip`. It trains MaskablePPO with a 7-action
 space: 4 move actions plus up to 3 bench-switch actions. The 106-feature rich

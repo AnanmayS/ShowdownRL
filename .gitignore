@@ -18,5 +18,4 @@ models/*.zip
 !models/maskable_ppo_v11_conservative_3M.zip
 dashboard/node_modules/
 results/
-*.webm
 *.mp4

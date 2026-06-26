@@ -1,0 +1,9 @@
+scenario,policy,episodes,wins,losses,draws,win_rate,non_loss_rate,average_reward,average_turns,seed,mechanics,opponent_policy,observation_mode,model_path,git_sha
+rich_type_aware_seed42,random_policy,1000,319,544,137,0.319,0.456,-1.8224294554350897,31.64,42,rich,type_aware,simple,,6d57ea6
+rich_type_aware_seed42,max_damage_policy,1000,542,429,29,0.542,0.571,0.5692134416789937,24.368,42,rich,type_aware,simple,,6d57ea6
+rich_type_aware_seed42,type_aware_policy,1000,752,222,26,0.752,0.778,1.9048463813859302,22.096,42,rich,type_aware,simple,,6d57ea6
+rich_type_aware_seed42,maskable_ppo_v11_conservative_3M,1000,790,169,41,0.79,0.831,2.2108914650035163,22.93,42,rich,type_aware,rich,models/maskable_ppo_v11_conservative_3M.zip,6d57ea6
+rich_type_aware_seed99,random_policy,1000,323,522,155,0.323,0.478,-1.8061898304590573,31.985,99,rich,type_aware,simple,,6d57ea6
+rich_type_aware_seed99,max_damage_policy,1000,545,428,27,0.545,0.572,0.5765665625939801,24.254,99,rich,type_aware,simple,,6d57ea6
+rich_type_aware_seed99,type_aware_policy,1000,753,222,25,0.753,0.778,1.9004732307412942,21.997,99,rich,type_aware,simple,,6d57ea6
+rich_type_aware_seed99,maskable_ppo_v11_conservative_3M,1000,788,172,40,0.788,0.828,2.2054174828772184,22.83,99,rich,type_aware,rich,models/maskable_ppo_v11_conservative_3M.zip,6d57ea6

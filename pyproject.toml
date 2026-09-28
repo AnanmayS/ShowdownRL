@@ -12,8 +12,10 @@ authors = [
   {name = "ShowdownRL contributors"},
 ]
 dependencies = [
+  "numpy",
   "playwright>=1.45",
   "platformdirs>=4.0",
+  "poke-env>=0.16",
 ]
 license = {text = "MIT"}
 keywords = ["pokemon", "showdown", "reinforcement-learning", "playwright"]

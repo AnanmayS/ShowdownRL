@@ -56,11 +56,21 @@ def build_parser() -> argparse.ArgumentParser:
     live.add_argument("--max-turns", type=int, default=200, help="Maximum AI action cycles before stopping.")
     live.add_argument("--max-battles", type=int, default=1, help="Number of battles to play before stopping.")
     live.add_argument("--max-time", type=float, help="Stop after this many minutes of live play.")
-    live.add_argument("--policy", choices=["heuristic", "ppo"], default="heuristic", help="Move-selection policy.")
-    live.add_argument("--model-path", type=Path, help="Path to a stable-baselines PPO model zip.")
+    live.add_argument(
+        "--policy",
+        choices=["heuristic", "ppo"],
+        default="heuristic",
+        help="heuristic: damage-calc heuristic; ppo: MaskablePPO model trained on battle_features "
+        "(falls back to the heuristic if no compatible model loads).",
+    )
+    live.add_argument(
+        "--model-path",
+        type=Path,
+        help="MaskablePPO .zip trained on battle_features (default: newest models/real/*.zip).",
+    )
     live.add_argument("--no-stats", action="store_true", help="Do not write local battle stats for this run.")
     live.add_argument("--stats-dir", type=Path, help="Directory for local battle stats.")
-    live.add_argument("--debug-policy", action="store_true", help="Print move scores and save redacted turn snapshots.")
+    live.add_argument("--debug-policy", action="store_true", help="Save redacted per-decision state snapshots.")
     live.add_argument("--slow-mo-ms", type=int, default=250, help="Browser slow-motion delay in milliseconds.")
     live.add_argument("--click-delay", type=float, default=0.75, help="Pause after visible clicks.")
     live.add_argument("--viewport-width", type=int, default=1280)

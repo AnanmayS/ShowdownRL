@@ -77,10 +77,10 @@ class RunExperimentsTests(unittest.TestCase):
             {
                 "policy": "current",
                 "seed": "42",
-                "episodes": "100",
-                "wins": "30",
-                "losses": "40",
-                "draws": "30",
+                "episodes": "1000",
+                "wins": "300",
+                "losses": "400",
+                "draws": "300",
                 "win_rate": "0.30",
                 "non_loss_rate": "0.60",
                 "average_reward": "0.40",
@@ -89,10 +89,10 @@ class RunExperimentsTests(unittest.TestCase):
             {
                 "policy": "winner",
                 "seed": "42",
-                "episodes": "100",
-                "wins": "35",
-                "losses": "35",
-                "draws": "30",
+                "episodes": "1000",
+                "wins": "350",
+                "losses": "350",
+                "draws": "300",
                 "win_rate": "0.35",
                 "non_loss_rate": "0.65",
                 "average_reward": "0.50",
@@ -101,10 +101,10 @@ class RunExperimentsTests(unittest.TestCase):
             {
                 "policy": "win_rate_only",
                 "seed": "42",
-                "episodes": "100",
-                "wins": "36",
-                "losses": "45",
-                "draws": "19",
+                "episodes": "1000",
+                "wins": "360",
+                "losses": "450",
+                "draws": "190",
                 "win_rate": "0.36",
                 "non_loss_rate": "0.55",
                 "average_reward": "0.60",
@@ -118,6 +118,37 @@ class RunExperimentsTests(unittest.TestCase):
         self.assertEqual(recommendations["current"], "baseline")
         self.assertEqual(recommendations["winner"], "promote")
         self.assertEqual(recommendations["win_rate_only"], "do-not-promote")
+
+    def test_win_rate_gain_must_be_statistically_significant(self) -> None:
+        # 35/100 vs 30/100 beats the baseline on every point estimate but p ~= 0.23.
+        rows = [
+            {
+                "policy": "current",
+                "seed": "42",
+                "episodes": "100",
+                "wins": "30",
+                "losses": "40",
+                "draws": "30",
+                "average_reward": "0.40",
+                "average_turns": "8.0",
+            },
+            {
+                "policy": "noisy",
+                "seed": "42",
+                "episodes": "100",
+                "wins": "35",
+                "losses": "35",
+                "draws": "30",
+                "average_reward": "0.50",
+                "average_turns": "8.2",
+            },
+        ]
+
+        aggregates = aggregate_rows(rows, {"current", "noisy"}, "current")
+        noisy = next(item for item in aggregates if item.policy == "noisy")
+
+        self.assertGreater(noisy.win_rate_p_value, 0.05)
+        self.assertEqual(noisy.recommendation, "do-not-promote")
 
     def test_seed_gate_blocks_candidate_that_only_wins_one_seed(self) -> None:
         rows = [

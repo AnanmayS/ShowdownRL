@@ -19,3 +19,4 @@ models/*.zip
 dashboard/node_modules/
 results/
 *.mp4
+research_notes/

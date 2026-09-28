@@ -124,6 +124,53 @@ class SimpleEnvTests(unittest.TestCase):
 
         self.assertEqual(env.action_masks().tolist(), [True, True, True, True])
 
+    def test_opponent_observation_does_not_mutate_env_state(self) -> None:
+        env = SimplePokemonMoveEnv(mechanics="rich", observation_mode="rich", seed=8)
+        env.reset()
+        env.own_hp = 0.4
+        env.opponent_hp = 0.7
+        before = (
+            env.own_hp,
+            env.opponent_hp,
+            env.moves,
+            env.opponent_moves,
+            env.bench,
+            env.opponent_bench,
+            env.active_pokemon,
+            env.opponent_active,
+        )
+
+        obs = env.get_opponent_observation()
+        masks = env.opponent_action_masks()
+
+        self.assertAlmostEqual(obs[0], 0.7, places=4)
+        self.assertAlmostEqual(obs[1], 0.4, places=4)
+        self.assertEqual(len(masks), env.action_space.n)
+        self.assertEqual(
+            before,
+            (
+                env.own_hp,
+                env.opponent_hp,
+                env.moves,
+                env.opponent_moves,
+                env.bench,
+                env.opponent_bench,
+                env.active_pokemon,
+                env.opponent_active,
+            ),
+        )
+
+    def test_switch_swaps_active_into_selected_bench_slot(self) -> None:
+        env = SimplePokemonMoveEnv(mechanics="typed", seed=9)
+        env.reset()
+        original_active = env.active_pokemon
+        replacement = env.bench[0]
+
+        env._apply_action(4, is_own=True)
+
+        self.assertIs(env.active_pokemon, replacement)
+        self.assertIs(env.bench[0], original_active)
+
 
 if __name__ == "__main__":
     unittest.main()

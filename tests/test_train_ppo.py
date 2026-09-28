@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import tempfile
 import unittest
+from pathlib import Path
 
 try:
-    from scripts.train_ppo import build_ppo_kwargs, parse_net_arch, resolve_algorithm
+    from scripts.train_ppo import LeaguePool, build_ppo_kwargs, parse_net_arch, resolve_algorithm
 except ImportError as exc:  # pragma: no cover - depends on optional rl extras
     build_ppo_kwargs = None
     parse_net_arch = None
@@ -53,6 +55,14 @@ class TrainPpoTests(unittest.TestCase):
 
         self.assertEqual(algorithm_class.__name__, "PPO")
         self.assertEqual(callback_class.__name__, "EvalCallback")
+
+    def test_league_pool_temperature_zero_picks_newest_checkpoint(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            pool = LeaguePool(Path(tmpdir), max_size=5)
+            for step in [100, 300, 200]:
+                (Path(tmpdir) / f"league_step_{step}.zip").touch()
+
+            self.assertEqual(pool.sample(temperature=0).name, "league_step_300.zip")
 
 
 if __name__ == "__main__":

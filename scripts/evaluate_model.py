@@ -250,11 +250,21 @@ def main():
         model, model_kind = load_rl_model(model_path)
         model_observation_mode, model_max_bench_size = model_env_shape(model)
 
+        # RNN state tracking — threaded across steps within an episode
+        _rnn_state = [None]
+        _last_env = [None]
+
         def ppo_policy(obs, env):
-            predict_kwargs = {"deterministic": True}
+            # Detect new episode (env changed) → reset RNN state
+            if id(env) != id(_last_env[0]):
+                _rnn_state[0] = None
+                _last_env[0] = env
+
+            nonlocal_kwargs = {"deterministic": True, "state": _rnn_state[0]}
             if model_kind == "maskable_ppo":
-                predict_kwargs["action_masks"] = env.action_masks()
-            action, _ = model.predict(obs, **predict_kwargs)
+                nonlocal_kwargs["action_masks"] = env.action_masks()
+            action, next_state = model.predict(obs, **nonlocal_kwargs)
+            _rnn_state[0] = next_state
             return int(action)
 
         ppo_policy.__name__ = policy_name

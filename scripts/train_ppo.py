@@ -10,6 +10,7 @@ Saves the model to the requested output path.
 
 import argparse
 import json
+import math
 import random
 import re
 import sys
@@ -79,11 +80,15 @@ class LeaguePool:
             _LEAGUE_MODEL_CACHE.pop(oldest_path.resolve(), None)
         return path
 
-    def sample(self) -> Path | None:
+    def sample(self, temperature: float = 0.7) -> Path | None:
         checkpoints = self.list_checkpoints()
         if not checkpoints:
             return None
-        return random.choice(checkpoints)[1]
+        if temperature <= 0:
+            return checkpoints[-1][1]
+        scores = [index / max(1, len(checkpoints) - 1) for index in range(len(checkpoints))]
+        weights = [math.exp(score / temperature) for score in scores]
+        return random.choices([path for _, path in checkpoints], weights=weights, k=1)[0]
 
     def list_checkpoints(self) -> list[tuple[int, Path]]:
         checkpoints = []
@@ -101,39 +106,17 @@ class OpponentWrapper:
         self.fallback_opponent_action = fallback_opponent_action
         self.self_play_prob = self_play_prob
 
+    def set_model(self, model) -> None:
+        self.model = model
+
+    def set_self_play_prob(self, value: float) -> None:
+        self.self_play_prob = max(0.0, min(1.0, float(value)))
+
     def _opponent_obs_and_masks(self):
-        env = self.env
-        swapped = {
-            "own_hp": env.own_hp,
-            "opponent_hp": env.opponent_hp,
-            "moves": env.moves,
-            "opponent_moves": env.opponent_moves,
-            "own_types": env.own_types,
-            "opponent_types": env.opponent_types,
-            "own_attack_boost": env.own_attack_boost,
-            "opponent_attack_boost": env.opponent_attack_boost,
-            "bench": env.bench,
-            "opponent_bench": env.opponent_bench,
-            "active_pokemon": env.active_pokemon,
-            "opponent_active": env.opponent_active,
-        }
-        try:
-            env.own_hp, env.opponent_hp = env.opponent_hp, env.own_hp
-            env.moves, env.opponent_moves = env.opponent_moves or env.moves, env.moves
-            env.own_types, env.opponent_types = env.opponent_types, env.own_types
-            env.own_attack_boost, env.opponent_attack_boost = (
-                env.opponent_attack_boost,
-                env.own_attack_boost,
-            )
-            env.bench, env.opponent_bench = env.opponent_bench, env.bench
-            env.active_pokemon, env.opponent_active = env.opponent_active, env.active_pokemon
-            return env._get_obs(), env.action_masks()
-        finally:
-            for name, value in swapped.items():
-                setattr(env, name, value)
+        return self.env.get_opponent_observation(), self.env.opponent_action_masks()
 
     def _opponent_action(self) -> int:
-        if self.env.rng.random() >= self.self_play_prob:
+        if self.model is None or self.env.rng.random() >= self.self_play_prob:
             return self.fallback_opponent_action()
         obs, action_masks = self._opponent_obs_and_masks()
         predict_kwargs = {"deterministic": False}
@@ -157,17 +140,69 @@ class LeagueSnapshotCallback(BaseCallback):
         return True
 
 
+class SelfPlayCurriculumCallback(BaseCallback):
+    def __init__(
+        self,
+        pool: LeaguePool,
+        update_freq: int,
+        initial_prob: float,
+        final_prob: float,
+        total_timesteps: int,
+        sampling_temperature: float,
+    ):
+        super().__init__()
+        self.pool = pool
+        self.update_freq = update_freq
+        self.initial_prob = max(0.0, min(1.0, initial_prob))
+        self.final_prob = max(0.0, min(1.0, final_prob))
+        self.total_timesteps = max(1, total_timesteps)
+        self.sampling_temperature = sampling_temperature
+        self.last_update_step = -update_freq
+
+    def _wrappers(self):
+        for env in getattr(self.training_env, "envs", []):
+            base_env = getattr(env, "env", env)
+            wrapper = getattr(base_env, "self_play_opponent_wrapper", None)
+            if wrapper is not None:
+                yield wrapper
+
+    def _on_step(self) -> bool:
+        progress = min(1.0, self.num_timesteps / self.total_timesteps)
+        prob = self.initial_prob + (self.final_prob - self.initial_prob) * progress
+        for wrapper in self._wrappers():
+            wrapper.set_self_play_prob(prob)
+
+        if self.num_timesteps - self.last_update_step >= self.update_freq:
+            model_path = self.pool.sample(self.sampling_temperature)
+            model = load_league_model(model_path)
+            if model is not None:
+                for wrapper in self._wrappers():
+                    wrapper.set_model(model)
+            self.last_update_step = self.num_timesteps
+        return True
+
+
 def load_league_model(model_path: Path | None):
     if model_path is None:
         return None
     cache_key = model_path.resolve()
     if cache_key not in _LEAGUE_MODEL_CACHE:
-        if "maskable" in model_path.stem:
+        stem = model_path.stem
+        if "recurrent" in stem:
+            from showdownrl.recurrent_maskable import RecurrentMaskablePPO
+
+            _LEAGUE_MODEL_CACHE[cache_key] = RecurrentMaskablePPO.load(str(model_path))
+        elif "maskable" in stem:
             from sb3_contrib import MaskablePPO
 
             _LEAGUE_MODEL_CACHE[cache_key] = MaskablePPO.load(str(model_path))
         else:
-            _LEAGUE_MODEL_CACHE[cache_key] = PPO.load(str(model_path))
+            # Try MaskablePPO first (common for league checkpoints), then fall back to PPO
+            try:
+                from sb3_contrib import MaskablePPO
+                _LEAGUE_MODEL_CACHE[cache_key] = MaskablePPO.load(str(model_path))
+            except Exception:
+                _LEAGUE_MODEL_CACHE[cache_key] = PPO.load(str(model_path))
     return _LEAGUE_MODEL_CACHE[cache_key]
 
 
@@ -188,7 +223,7 @@ def parse_args():
     )
     parser.add_argument(
         "--mechanics",
-        choices=["toy", "typed", "rich"],
+        choices=["toy", "typed", "rich", "advanced"],
         default="typed",
         help="Environment mechanics used during training.",
     )
@@ -206,10 +241,18 @@ def parse_args():
     )
     parser.add_argument(
         "--algorithm",
-        choices=["ppo", "maskable_ppo"],
+        choices=["ppo", "maskable_ppo", "recurrent_maskable_ppo"],
         default="ppo",
         help="RL algorithm to train.",
     )
+    parser.add_argument("--recurrent", action="store_true", default=False,
+                        help="Shortcut: train with RecurrentMaskablePPO (GRU).")
+    parser.add_argument("--lstm-hidden-size", type=positive_int, default=256,
+                        help="LSTM hidden state size for recurrent policy.")
+    parser.add_argument("--n-lstm-layers", type=positive_int, default=1,
+                        help="Number of LSTM layers for recurrent policy.")
+    parser.add_argument("--shared-lstm", action="store_true", default=False,
+                        help="Share LSTM between actor and critic.")
     parser.add_argument("--resume-from", type=Path, help="Existing PPO model to continue training.")
     parser.add_argument("--n-envs", type=positive_int, default=8, help="Parallel env copies for PPO rollouts.")
     parser.add_argument("--n-steps", type=positive_int, default=256, help="Rollout steps per env before each update.")
@@ -232,11 +275,18 @@ def parse_args():
     parser.add_argument("--league-dir", type=Path, default=Path("models/league"), help="Directory for league checkpoints.")
     parser.add_argument("--league-update-freq", type=positive_int, default=50_000, help="Timesteps between league snapshots.")
     parser.add_argument("--self-play-prob", type=float, default=0.5, help="Probability of using the league opponent for each opponent action.")
+    parser.add_argument("--self-play-final-prob", type=float, default=0.25, help="Final self-play probability after linear curriculum decay.")
+    parser.add_argument("--league-sampling-temperature", type=float, default=0.7, help="Recency-weighted league sampling temperature; 0 picks the newest checkpoint.")
     parser.add_argument("--league-pool-size", type=positive_int, default=10, help="Maximum league checkpoints to keep.")
     return parser.parse_args()
 
 
-def make_env(args: argparse.Namespace, seed_offset: int = 0, league_model_path: Path | None = None):
+def make_env(
+    args: argparse.Namespace,
+    seed_offset: int = 0,
+    league_model_path: Path | None = None,
+    enable_self_play: bool = False,
+):
     def _init():
         env = SimplePokemonMoveEnv(
             seed=args.seed + seed_offset,
@@ -245,8 +295,9 @@ def make_env(args: argparse.Namespace, seed_offset: int = 0, league_model_path: 
             observation_mode=args.observation_mode,
         )
         league_model = load_league_model(league_model_path)
-        if league_model is not None:
+        if enable_self_play:
             wrapper = OpponentWrapper(env, league_model, env._opponent_action, args.self_play_prob)
+            env.self_play_opponent_wrapper = wrapper
             env._opponent_action = wrapper._opponent_action
         return Monitor(env)
 
@@ -255,6 +306,21 @@ def make_env(args: argparse.Namespace, seed_offset: int = 0, league_model_path: 
 
 def build_ppo_kwargs(args: argparse.Namespace) -> dict[str, Any]:
     target_kl = args.target_kl if args.target_kl and args.target_kl > 0 else None
+    policy_kwargs: dict[str, Any] = {
+        "net_arch": args.net_arch,
+        "activation_fn": ACTIVATION_FNS[getattr(args, "activation_fn", "relu")],
+        "ortho_init": args.ortho_init,
+    }
+    if (
+        getattr(args, "algorithm", "ppo") == "recurrent_maskable_ppo"
+        or getattr(args, "recurrent", False)
+    ):
+        policy_kwargs.update({
+            "lstm_hidden_size": args.lstm_hidden_size,
+            "n_lstm_layers": args.n_lstm_layers,
+            "shared_lstm": args.shared_lstm,
+            "enable_critic_lstm": not args.shared_lstm,
+        })
     return {
         "learning_rate": args.learning_rate,
         "n_steps": args.n_steps,
@@ -267,25 +333,36 @@ def build_ppo_kwargs(args: argparse.Namespace) -> dict[str, Any]:
         "vf_coef": args.vf_coef,
         "max_grad_norm": args.max_grad_norm,
         "target_kl": target_kl,
-        "policy_kwargs": {
-            "net_arch": args.net_arch,
-            "activation_fn": ACTIVATION_FNS[getattr(args, "activation_fn", "relu")],
-            "ortho_init": args.ortho_init,
-        },
+        "policy_kwargs": policy_kwargs,
     }
 
 
 def resolve_algorithm(algorithm: str):
     if algorithm == "ppo":
         return PPO, EvalCallback
-    try:
-        from sb3_contrib import MaskablePPO
-        from sb3_contrib.common.maskable.callbacks import MaskableEvalCallback
-    except ImportError as exc:
-        raise SystemExit(
-            "MaskablePPO requires sb3-contrib. Install RL dependencies with `pip install -e '.[rl]'`."
-        ) from exc
-    return MaskablePPO, MaskableEvalCallback
+    if algorithm == "maskable_ppo":
+        try:
+            from sb3_contrib import MaskablePPO
+            from sb3_contrib.common.maskable.callbacks import MaskableEvalCallback
+        except ImportError as exc:
+            raise SystemExit(
+                "MaskablePPO requires sb3-contrib. Install RL dependencies with `pip install -e '.[rl]'`."
+            ) from exc
+        return MaskablePPO, MaskableEvalCallback
+    if algorithm == "recurrent_maskable_ppo":
+        try:
+            from sb3_contrib import RecurrentPPO
+            from showdownrl.recurrent_maskable import (
+                RecurrentMaskablePPO,
+                RecurrentMaskableActorCriticPolicy,
+            )
+        except ImportError as exc:
+            raise SystemExit(
+                "RecurrentMaskablePPO requires sb3-contrib. "
+                "Install RL dependencies with `pip install -e '.[rl]'`."
+            ) from exc
+        return RecurrentMaskablePPO, EvalCallback
+    raise ValueError(f"Unknown algorithm: {algorithm}")
 
 
 def write_metadata(args: argparse.Namespace, save_path: Path, best_model_dir: Path | None) -> Path:
@@ -313,6 +390,8 @@ def write_metadata(args: argparse.Namespace, save_path: Path, best_model_dir: Pa
         "league_dir": str(args.league_dir),
         "league_update_freq": args.league_update_freq,
         "self_play_prob": args.self_play_prob,
+        "self_play_final_prob": args.self_play_final_prob,
+        "league_sampling_temperature": args.league_sampling_temperature,
         "league_pool_size": args.league_pool_size,
     }
     metadata_path.write_text(json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -321,6 +400,8 @@ def write_metadata(args: argparse.Namespace, save_path: Path, best_model_dir: Pa
 
 def main():
     args = parse_args()
+    if args.recurrent:
+        args.algorithm = "recurrent_maskable_ppo"
     root = Path(__file__).resolve().parent.parent
     save_path = args.output if args.output.is_absolute() else root / args.output
     save_path.parent.mkdir(parents=True, exist_ok=True)
@@ -344,20 +425,24 @@ def main():
     league_model_path = None
     if args.self_play:
         league_pool = LeaguePool(args.league_dir, args.league_pool_size)
-        league_model_path = league_pool.sample()
+        league_model_path = league_pool.sample(args.league_sampling_temperature)
         if league_model_path is None:
             print(f"Self-play enabled; no league checkpoints found in {args.league_dir}", flush=True)
         else:
             print(f"Self-play enabled; sampled league opponent {league_model_path}", flush=True)
 
-    env = DummyVecEnv([make_env(args, rank, league_model_path) for rank in range(args.n_envs)])
+    # Select the right policy class name
+    is_recurrent = args.algorithm == "recurrent_maskable_ppo" or args.recurrent
+    policy_name = "MlpLstmPolicy" if is_recurrent else "MlpPolicy"
+
+    env = DummyVecEnv([make_env(args, rank, league_model_path, args.self_play) for rank in range(args.n_envs)])
     eval_env = DummyVecEnv([make_env(args, 10_000)])
     if args.resume_from:
         resume_path = args.resume_from if args.resume_from.is_absolute() else root / args.resume_from
         print(f"Resuming {args.algorithm} model from {resume_path}", flush=True)
         model = algorithm_class.load(str(resume_path), env=env, seed=args.seed, verbose=1)
     else:
-        model = algorithm_class("MlpPolicy", env, verbose=1, seed=args.seed, **build_ppo_kwargs(args))
+        model = algorithm_class(policy_name, env, verbose=1, seed=args.seed, **build_ppo_kwargs(args))
 
     callbacks = []
     best_model_dir: Path | None = None
@@ -375,6 +460,16 @@ def main():
         )
     if league_pool is not None:
         callbacks.append(LeagueSnapshotCallback(league_pool, args.league_update_freq))
+        callbacks.append(
+            SelfPlayCurriculumCallback(
+                league_pool,
+                args.league_update_freq,
+                args.self_play_prob,
+                args.self_play_final_prob,
+                args.timesteps,
+                args.league_sampling_temperature,
+            )
+        )
 
     model.learn(total_timesteps=args.timesteps, callback=callbacks or None)
 

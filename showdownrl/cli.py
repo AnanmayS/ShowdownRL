@@ -49,7 +49,7 @@ def build_parser() -> argparse.ArgumentParser:
     live = subparsers.add_parser("live", help="Launch the visible AI player.")
     add_common_live_args(live)
     live.add_argument("--format", default="", help="Optional format text to select before queueing.")
-    live.add_argument("--no-record", action="store_true", help="Do not save a WebM recording.")
+    live.add_argument("--record", action="store_true", help="Save a WebM recording of the battle.")
     live.add_argument("--check-ui-only", action="store_true", help=argparse.SUPPRESS)
     live.add_argument("--record-dir", type=Path, help="Directory for the WebM recording.")
     live.add_argument("--keep-open", action="store_true", help="Leave the browser open after the battle loop ends.")
@@ -148,7 +148,7 @@ def options_from_args(args: argparse.Namespace, *, check_ui_only: bool = False) 
         guest=config.guest,
         site=config.site,
         format_name=getattr(args, "format", ""),
-        record=not getattr(args, "no_record", False),
+        record=getattr(args, "record", False),
         record_dir=getattr(args, "record_dir", None),
         keep_open=getattr(args, "keep_open", False),
         login_only=getattr(args, "login_only", False),

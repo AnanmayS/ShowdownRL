@@ -112,17 +112,34 @@ VISIBLE_RESULT = """
 GET_LADDER_RATING = """
 () => {
     const clean = value => (value || '').replace(/\\s+/g, ' ').trim();
-    const text = Array.from(document.querySelectorAll('.battle-history,.battle-log,.userbar,.room'))
-        .map(node => clean(node.textContent))
-        .filter(Boolean)
-        .join(' ');
-    const patterns = [
-        /\\brating\\D{0,24}(\\d{3,5})\\b/i,
-        /\\belo\\D{0,24}(\\d{3,5})\\b/i,
-        /\\b(?:was|is)\\s+(\\d{3,5})\\b/i
-    ];
-    for (const pattern of patterns) {
-        const match = text.match(pattern);
+
+    // 1. Check broadcast nodes — most reliable after-battle rating display
+    // Typical: "Your rating: 1050 → 1070 (+20)" or "Rating: 1000 → 1020"
+    const broadcasts = document.querySelectorAll('.broadcast-green, .broadcast-red');
+    for (const node of broadcasts) {
+        const text = clean(node.textContent);
+        const arrow = text.match(/rating:\\s*(\\d{3,5})\\s*[→➡].*?\\b(\\d{3,5})\\b/i);
+        if (arrow) return Number(arrow[2]);      // after → rating
+        const single = text.match(/rating:\\s*(\\d{3,5})\\b/i);
+        if (single) return Number(single[1]);
+    }
+
+    // 2. Check battle-history for rating lines
+    // Formats: "Rating: 1000 → 1020" or "Your rating is now 1050"
+    for (const node of document.querySelectorAll('.battle-history > *, .battle-log > *')) {
+        const text = clean(node.textContent);
+        // Two-number arrow: "Rating 1000 → 1020" or "rating 1000 -> 1020"
+        const arrow = text.match(/rating\\D{0,8}(\\d{3,5})\\D{0,8}(?:→|➡|->)\\D{0,8}(\\d{3,5})\\b/i);
+        if (arrow) return Number(arrow[2]);
+        const current = text.match(/(?:your\\s+)?rating\\D{0,24}(\\d{3,5})\\b/i);
+        if (current) return Number(current[1]);
+    }
+
+    // 3. Fallback: userbar sometimes shows rating in room header
+    const room = document.querySelector('.room');
+    if (room) {
+        const text = clean(room.textContent);
+        const match = text.match(/[ELO\\s]*rating[\\s:]*\\b(\\d{3,5})\\b/i);
         if (match) return Number(match[1]);
     }
     return null;
@@ -215,7 +232,7 @@ class LiveOptions:
     guest: bool = False
     site: str = DEFAULT_SITE
     format_name: str = ""
-    record: bool = True
+    record: bool = False
     record_dir: Path | None = None
     keep_open: bool = False
     login_only: bool = False
@@ -753,8 +770,7 @@ async def run_live(options: LiveOptions) -> int:
                     switch_signature = switch_options_signature(turn_state.get("switch_options"), switch_count)
                     if switch_count and switch_signature == last_forced_switch_signature:
                         await asyncio.sleep(1.5)
-                        continue
-                    if switch_count and now - last_forced_switch_at >= 6.0:
+                    elif switch_count and now - last_forced_switch_at >= 6.0:
                         switch_options = turn_state.get("switch_options") or [
                             {"index": index, "name": f"Switch {index + 1}", "text": ""}
                             for index in range(switch_count)
@@ -780,10 +796,8 @@ async def run_live(options: LiveOptions) -> int:
                             )
                             print(f"  Forced switch clicked: {switch_label} (score {switch_score:.2f}).", flush=True)
                             await asyncio.sleep(2.5)
-                            continue
                     elif switch_count:
                         await asyncio.sleep(1)
-                        continue
                     else:
                         last_forced_switch_signature = ()
 

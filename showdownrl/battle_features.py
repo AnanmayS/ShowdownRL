@@ -215,7 +215,18 @@ def _ability_immune(move_type: PokemonType, defender: Pokemon) -> float:
     return 1.0 - hits / len(possible)
 
 
-def estimate_damage(
+def estimate_damage(*args, **kwargs) -> float:
+    """Expected damage as a fraction of the defender's *max* HP (accuracy included).
+
+    Returns 0 for moves poke-env has incomplete data for (e.g. ``recharge``).
+    """
+    try:
+        return _estimate_damage(*args, **kwargs)
+    except (KeyError, AttributeError, TypeError, ValueError):
+        return 0.0
+
+
+def _estimate_damage(
     move: Move,
     attacker: Pokemon,
     defender: Pokemon,
@@ -223,7 +234,6 @@ def estimate_damage(
     attacker_is_us: bool,
     tera: bool = False,
 ) -> float:
-    """Expected damage as a fraction of the defender's *max* HP (accuracy included)."""
     if move.category == MoveCategory.STATUS:
         return 0.0
     move_id = move.id
@@ -358,6 +368,15 @@ OPP_TEAM_FEATURES = 8
 
 def _move_features(move: Optional[Move], battle: Battle, available: set[str],
                    opp_hp: float) -> list[float]:
+    try:
+        return _move_features_unsafe(move, battle, available, opp_hp)
+    except (KeyError, AttributeError, TypeError, ValueError):
+        flag = 1.0 if move is not None and move.id in available else 0.0
+        return [flag] + [0.0] * (MOVE_FEATURES - 1)
+
+
+def _move_features_unsafe(move: Optional[Move], battle: Battle, available: set[str],
+                          opp_hp: float) -> list[float]:
     active, opp = battle.active_pokemon, battle.opponent_active_pokemon
     if move is None or active is None:
         return [0.0] * MOVE_FEATURES
@@ -497,7 +516,11 @@ def embed_battle(battle: Battle) -> np.ndarray:
     opp_priority_threat = 0.0
     if active is not None and opp is not None:
         for move in candidate_moves(opp):
-            if move.priority > 0 and move.category != MoveCategory.STATUS:
+            try:
+                is_priority = move.priority > 0 and move.category != MoveCategory.STATUS
+            except KeyError:
+                continue
+            if is_priority:
                 opp_priority_threat = max(
                     opp_priority_threat, estimate_damage(move, opp, active, battle, False))
 

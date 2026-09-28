@@ -61,6 +61,9 @@ class ShowdownFeatureEnv(SinglesEnv):
 
     def embed_battle(self, battle: AbstractBattle) -> np.ndarray:
         assert isinstance(battle, Battle)
+        if battle.player_username != self.agent1.username:
+            # The opponent Player embeds its own view when it needs one.
+            return np.zeros(OBS_SIZE, dtype=np.float32)
         return embed_battle(battle)
 
 

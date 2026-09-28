@@ -20,3 +20,7 @@ dashboard/node_modules/
 results/
 *.mp4
 research_notes/
+logs/
+models/real/*.npz
+models/real/*/ckpt_*.zip
+models/real/*/league/

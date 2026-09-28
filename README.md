@@ -11,8 +11,13 @@ Showdown player in action. It opens the real Pokemon Showdown website, signs in
 with your account or a guest name, queues a Random Battle, and clicks moves in a
 visible browser so you can follow every decision.
 
-The live player can use a lightweight heuristic policy or a trained PPO move
-selector. It can also save WebM recordings, write local battle stats, and
+Decisions are made from the raw battle protocol the web client receives, not
+from scraped page text: ShowdownRL records the battle room's messages, rebuilds
+the battle with poke-env's own parser, and feeds the same features used in
+training (`showdownrl/battle_features.py`) to the policy. The policy is either a
+damage-calc heuristic or a MaskablePPO model trained on the real simulator, and
+it can pick any legal action: moves, voluntary switches, and Terastallization.
+It can also save WebM recordings, write local battle stats, and
 generate local reports for comparing runs over time. Credentials, battle logs,
 debug snapshots, recordings, and stats stay on your machine unless you choose to
 share them.
@@ -132,14 +137,15 @@ showdownrl live --max-battles 3
 # Stop a long session after 30 minutes
 showdownrl live --max-battles 50 --max-time 30
 
-# Show move scores while the AI is choosing
+# Save a redacted state snapshot for every decision
 showdownrl live --debug-policy
 
-# Try the trained PPO move selector, falling back to the heuristic if needed
+# Use the newest real-simulator model in models/real/, falling back to the
+# damage-calc heuristic if none loads
 showdownrl live --policy ppo
 
-# Use a specific PPO checkpoint
-showdownrl live --policy ppo --model-path models/maskable_ppo_v11_conservative_3M.zip
+# Use a specific MaskablePPO checkpoint trained on battle_features
+showdownrl live --policy ppo --model-path models/real/my_model.zip
 
 # Do not write local battle stats
 showdownrl live --no-stats

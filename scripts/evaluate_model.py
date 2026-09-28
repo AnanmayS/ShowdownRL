@@ -26,10 +26,12 @@ from stable_baselines3 import PPO
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from showdownrl.significance import wilson_interval
 from showdownrl.simple_env import (
-    BASE_RICH_OBS_SIZE,
-    BENCH_FEATURES_PER_POKEMON,
+    ENV_VERSION,
+    OBSERVATION_MODES,
     SimplePokemonMoveEnv,
+    _obs_size_for_mechanics,
 )
 from showdownrl.policies import random_policy, max_damage_policy, type_aware_policy
 from showdownrl.policy_bridge import default_model_path
@@ -64,13 +66,13 @@ def parse_args():
     )
     parser.add_argument(
         "--mechanics",
-        choices=["toy", "typed", "rich"],
+        choices=["toy", "typed", "rich", "advanced"],
         default="toy",
         help="Environment mechanics used during evaluation.",
     )
     parser.add_argument(
         "--observation-mode",
-        choices=["simple", "rich", "auto"],
+        choices=[*OBSERVATION_MODES, "auto"],
         default="auto",
         help="Observation vector for built-in policies; PPO models use their trained shape when auto.",
     )
@@ -136,11 +138,11 @@ def evaluate_policy(
         rewards.append(ep_reward)
         turns_list.append(turns)
 
-        opponent_hp = float(final_info.get("opponent_hp", 0.0))
-        own_hp = float(final_info.get("own_hp", 0.0))
-        if opponent_hp <= 0.0 and own_hp > 0.0:
+        # The env reports the whole-team outcome; active-Pokemon HP alone can't tell.
+        result = final_info.get("result", "draw")
+        if result == "win":
             wins += 1
-        elif own_hp <= 0.0 and opponent_hp > 0.0:
+        elif result == "loss":
             losses += 1
         else:
             draws += 1
@@ -148,6 +150,7 @@ def evaluate_policy(
         env.close()
 
     total = n_episodes
+    ci_low, ci_high = wilson_interval(wins, total)
     return {
         "policy": policy_fn.__name__,
         "episodes": total,
@@ -155,6 +158,8 @@ def evaluate_policy(
         "losses": losses,
         "draws": draws,
         "win_rate": wins / total,
+        "win_rate_ci_low": ci_low,
+        "win_rate_ci_high": ci_high,
         "non_loss_rate": (wins + draws) / total,
         "average_reward": np.mean(rewards),
         "average_turns": np.mean(turns_list),
@@ -188,15 +193,24 @@ def load_rl_model(model_path: Path):
             ) from maskable_error
 
 
-def model_env_shape(model) -> tuple[str, int]:
+def model_env_shape(model, mechanics: str, max_bench_size: int = 8) -> tuple[str, int]:
+    """Infer (observation_mode, max_bench_size) from a model's observation size.
+
+    The layout depends on the mechanics (advanced adds status/item/hazard
+    features), so match against every mode/bench combination for them.
+    """
     model_shape = getattr(model.observation_space, "shape", ())
-    obs_size = int(model_shape[0]) if model_shape else BASE_RICH_OBS_SIZE
-    if obs_size <= 14:
-        return "simple", 0
-    if obs_size <= BASE_RICH_OBS_SIZE:
+    if not model_shape:
         return "rich", 0
-    bench_features = obs_size - BASE_RICH_OBS_SIZE
-    return "rich", max(0, bench_features // BENCH_FEATURES_PER_POKEMON)
+    obs_size = int(model_shape[0])
+    for bench_size in range(max_bench_size + 1):
+        for observation_mode in OBSERVATION_MODES:
+            if _obs_size_for_mechanics(mechanics, observation_mode, bench_size) == obs_size:
+                return observation_mode, bench_size
+    raise ValueError(
+        f"Model observation size {obs_size} doesn't match any {mechanics!r} observation layout; "
+        "check --mechanics."
+    )
 
 
 def main():
@@ -213,6 +227,7 @@ def main():
     results = []
 
     # Baseline policies
+    baseline_observation_mode = "simple" if args.observation_mode == "auto" else args.observation_mode
     for policy_fn in [random_policy, max_damage_policy, type_aware_policy]:
         print(f"  {policy_fn.__name__}...")
         stats = evaluate_policy(
@@ -222,7 +237,7 @@ def main():
             args.seed,
             args.opponent_policy,
             args.mechanics,
-            "rich" if args.observation_mode == "rich" else "simple",
+            baseline_observation_mode,
         )
         stats.update(
             {
@@ -230,9 +245,10 @@ def main():
                 "seed": args.seed,
                 "mechanics": args.mechanics,
                 "opponent_policy": args.opponent_policy,
-                "observation_mode": "rich" if args.observation_mode == "rich" else "simple",
+                "observation_mode": baseline_observation_mode,
                 "model_path": "",
                 "git_sha": current_git_sha,
+                "env_version": ENV_VERSION,
             }
         )
         results.append(stats)
@@ -248,7 +264,7 @@ def main():
         policy_name = model_path.stem
         print(f"\n  {policy_name}...")
         model, model_kind = load_rl_model(model_path)
-        model_observation_mode, model_max_bench_size = model_env_shape(model)
+        model_observation_mode, model_max_bench_size = model_env_shape(model, args.mechanics)
 
         # RNN state tracking — threaded across steps within an episode
         _rnn_state = [None]
@@ -288,6 +304,7 @@ def main():
                 "observation_mode": model_observation_mode if args.observation_mode == "auto" else args.observation_mode,
                 "model_path": str(model_path.relative_to(root) if model_path.is_relative_to(root) else model_path),
                 "git_sha": current_git_sha,
+                "env_version": ENV_VERSION,
             }
         )
         results.append(stats)

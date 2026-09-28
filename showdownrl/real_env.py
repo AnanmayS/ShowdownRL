@@ -176,6 +176,21 @@ def parse_pool(spec: str) -> list[tuple[float, NamedChooser]]:
 # Gym wrapper for SB3
 
 
+def _enable_stack_dumps() -> None:
+    """`kill -USR1 <pid>` dumps all thread stacks to logs/stacks_<pid>.txt (hang debugging)."""
+    import faulthandler
+    import os
+    import signal
+
+    try:
+        Path("logs").mkdir(exist_ok=True)
+        handle = open(f"logs/stacks_{os.getpid()}.txt", "w")
+        faulthandler.register(signal.SIGUSR1, file=handle, all_threads=True)
+        _enable_stack_dumps.handle = handle  # keep the file open
+    except (OSError, AttributeError, ValueError):
+        pass
+
+
 class MaskedShowdownEnv(gym.Env):
     """Flat-observation env exposing ``action_masks()`` for MaskablePPO."""
 
@@ -184,6 +199,7 @@ class MaskedShowdownEnv(gym.Env):
     def __init__(self, opponent_pool: str = "heuristic:1", port: int = 8000,
                  hp_value: float = 0.0, fainted_value: float = 0.0, seed: Optional[int] = None):
         super().__init__()
+        _enable_stack_dumps()
         tag = f"{random.randrange(16**6):06x}"
         self.poke_env = ShowdownFeatureEnv(
             battle_format=BATTLE_FORMAT,

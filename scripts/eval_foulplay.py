@@ -95,11 +95,14 @@ def wilson(wins: int, n: int, z: float = 1.96) -> tuple[float, float]:
 
 class FoulPlayProcess:
     def __init__(self, fp_dir: Path, python: Path, username: str, port: int,
-                 search_time_ms: int, parallelism: int, run_count: int, log_path: Path):
+                 search_time_ms: int, parallelism: int, run_count: int, log_path: Path,
+                 entry: Optional[Path] = None, extra_env: Optional[dict] = None):
+        """``entry``: script to run instead of Foul Play's ``run.py`` (e.g. the logging
+        wrapper scripts/foulplay_logged_run.py); ``extra_env``: added to its environment."""
         self.username = username
         self.log_path = log_path
         cmd = [
-            str(python), "run.py",
+            str(python), str(entry) if entry else "run.py",
             "--websocket-uri", f"ws://localhost:{port}/showdown/websocket",
             "--ps-username", username,
             "--bot-mode", "accept_challenge",
@@ -111,7 +114,8 @@ class FoulPlayProcess:
         ]
         log_path.parent.mkdir(parents=True, exist_ok=True)
         self._log = open(log_path, "w")
-        env = dict(os.environ, PYTHONUNBUFFERED="1", PYTHONIOENCODING="utf-8")
+        env = dict(os.environ, PYTHONUNBUFFERED="1", PYTHONIOENCODING="utf-8",
+                   FOULPLAY_DIR=str(fp_dir), **(extra_env or {}))
         # Own process group so the search worker processes die with it.
         self.proc = subprocess.Popen(cmd, cwd=fp_dir, stdout=self._log, stderr=subprocess.STDOUT,
                                      env=env, start_new_session=True)

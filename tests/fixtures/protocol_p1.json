@@ -1,0 +1,726 @@
+{
+ "battle_tag": "battle-gen9randombattle-2145",
+ "username": "srl rec ee98",
+ "role": "p1",
+ "won": true,
+ "messages": [
+  ">battle-gen9randombattle-2145\n|init|battle\n|title|srl rec ee98 vs. srl opp ee98\n|j|\u2606srl rec ee98\n",
+  ">battle-gen9randombattle-2145\n|j|\u2606srl opp ee98",
+  ">battle-gen9randombattle-2145\n|t:|1790622933\n|gametype|singles",
+  ">battle-gen9randombattle-2145\n|player|p1|srl rec ee98|102|",
+  ">battle-gen9randombattle-2145\n|player|p2|srl opp ee98|2|\n|gen|9\n|tier|[Gen 9] Random Battle\n|rule|Species Clause: Limit one of each Pok\u00e9mon\n|rule|HP Percentage Mod: HP is shown in percentages\n|rule|Sleep Clause Mod: Limit one foe put to sleep\n|rule|Illusion Level Mod: Illusion disguises the Pok\u00e9mon's true level\n|\n|t:|1790622933\n|teamsize|p1|6\n|teamsize|p2|6\n|start\n|switch|p1a: Rillaboom|Rillaboom, L79, M|288/288\n|switch|p2a: Chien-Pao|Chien-Pao, L72|100/100\n|-ability|p2a: Chien-Pao|Sword of Ruin\n|-fieldstart|move: Grassy Terrain|[from] ability: Grassy Surge|[of] p1a: Rillaboom\n|turn|1",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Wood Hammer\",\"id\":\"woodhammer\",\"pp\":24,\"maxpp\":24,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Grassy Glide\",\"id\":\"grassyglide\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"High Horsepower\",\"id\":\"highhorsepower\",\"pp\":16,\"maxpp\":16,\"target\":\"normal\",\"disabled\":false},{\"move\":\"U-turn\",\"id\":\"uturn\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false}],\"canTerastallize\":\"Grass\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"288/288\",\"active\":true,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"246/246\",\"active\":false,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"564/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"}]},\"rqid\":2}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p2a: Chien-Pao|Icicle Crash|p1a: Rillaboom\n|-supereffective|p1a: Rillaboom\n|-damage|p1a: Rillaboom|52/288\n|move|p1a: Rillaboom|Wood Hammer|p2a: Chien-Pao\n|-damage|p2a: Chien-Pao|0 fnt\n|faint|p2a: Chien-Pao\n|-damage|p1a: Rillaboom|0 fnt|[from] Recoil\n|faint|p1a: Rillaboom\n|\n|upkeep",
+  ">battle-gen9randombattle-2145\n|request|{\"forceSwitch\":[true],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":true,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"246/246\",\"active\":false,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"564/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"}]},\"rqid\":4}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|switch|p2a: Forretress|Forretress, L84, M|100/100\n|switch|p1a: Jolteon|Jolteon, L84, F|246/246\n|turn|2",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Thunderbolt\",\"id\":\"thunderbolt\",\"pp\":24,\"maxpp\":24,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Alluring Voice\",\"id\":\"alluringvoice\",\"pp\":16,\"maxpp\":16,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Calm Mind\",\"id\":\"calmmind\",\"pp\":32,\"maxpp\":32,\"target\":\"self\",\"disabled\":false},{\"move\":\"Volt Switch\",\"id\":\"voltswitch\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false}],\"canTerastallize\":\"Electric\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"246/246\",\"active\":true,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"564/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"}]},\"rqid\":6}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p1a: Jolteon|Thunderbolt|p2a: Forretress\n|-damage|p2a: Forretress|51/100\n|move|p2a: Forretress|Stealth Rock|p1a: Jolteon\n|-sidestart|p1: srl rec ee98|move: Stealth Rock\n|\n|-heal|p2a: Forretress|58/100|[from] Grassy Terrain\n|-heal|p2a: Forretress|64/100|[from] item: Leftovers\n|upkeep\n|turn|3",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Thunderbolt\",\"id\":\"thunderbolt\",\"pp\":23,\"maxpp\":24,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Alluring Voice\",\"id\":\"alluringvoice\",\"pp\":16,\"maxpp\":16,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Calm Mind\",\"id\":\"calmmind\",\"pp\":32,\"maxpp\":32,\"target\":\"self\",\"disabled\":false},{\"move\":\"Volt Switch\",\"id\":\"voltswitch\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false}],\"canTerastallize\":\"Electric\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"246/246\",\"active\":true,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"564/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"}]},\"rqid\":8}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p1a: Jolteon|Thunderbolt|p2a: Forretress\n|-damage|p2a: Forretress|11/100\n|move|p2a: Forretress|Spikes|p1a: Jolteon\n|-sidestart|p1: srl rec ee98|Spikes\n|\n|-heal|p2a: Forretress|17/100|[from] Grassy Terrain\n|-heal|p2a: Forretress|23/100|[from] item: Leftovers\n|upkeep\n|turn|4",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Thunderbolt\",\"id\":\"thunderbolt\",\"pp\":22,\"maxpp\":24,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Alluring Voice\",\"id\":\"alluringvoice\",\"pp\":16,\"maxpp\":16,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Calm Mind\",\"id\":\"calmmind\",\"pp\":32,\"maxpp\":32,\"target\":\"self\",\"disabled\":false},{\"move\":\"Volt Switch\",\"id\":\"voltswitch\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false}],\"canTerastallize\":\"Electric\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"246/246\",\"active\":true,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"564/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"}]},\"rqid\":10}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p1a: Jolteon|Thunderbolt|p2a: Forretress\n|-crit|p2a: Forretress\n|-damage|p2a: Forretress|0 fnt\n|faint|p2a: Forretress\n|\n|upkeep",
+  ">battle-gen9randombattle-2145\n|request|{\"wait\":true,\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"246/246\",\"active\":true,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"564/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"}]},\"rqid\":12}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|switch|p2a: Glimmora|Glimmora, L75, F|100/100\n|-item|p2a: Glimmora|Air Balloon\n|turn|5",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Thunderbolt\",\"id\":\"thunderbolt\",\"pp\":21,\"maxpp\":24,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Alluring Voice\",\"id\":\"alluringvoice\",\"pp\":16,\"maxpp\":16,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Calm Mind\",\"id\":\"calmmind\",\"pp\":32,\"maxpp\":32,\"target\":\"self\",\"disabled\":false},{\"move\":\"Volt Switch\",\"id\":\"voltswitch\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false}],\"canTerastallize\":\"Electric\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"246/246\",\"active\":true,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"564/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"}]},\"rqid\":14}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p1a: Jolteon|Thunderbolt|p2a: Glimmora\n|-damage|p2a: Glimmora|52/100\n|-enditem|p2a: Glimmora|Air Balloon\n|move|p2a: Glimmora|Earth Power|p1a: Jolteon\n|-supereffective|p1a: Jolteon\n|-damage|p1a: Jolteon|116/246\n|\n|-heal|p1a: Jolteon|131/246|[from] Grassy Terrain\n|-heal|p2a: Glimmora|58/100|[from] Grassy Terrain\n|-fieldend|move: Grassy Terrain\n|upkeep\n|turn|6",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Thunderbolt\",\"id\":\"thunderbolt\",\"pp\":20,\"maxpp\":24,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Alluring Voice\",\"id\":\"alluringvoice\",\"pp\":16,\"maxpp\":16,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Calm Mind\",\"id\":\"calmmind\",\"pp\":32,\"maxpp\":32,\"target\":\"self\",\"disabled\":false},{\"move\":\"Volt Switch\",\"id\":\"voltswitch\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false}],\"canTerastallize\":\"Electric\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"131/246\",\"active\":true,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"564/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"}]},\"rqid\":16}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p1a: Jolteon|Thunderbolt|p2a: Glimmora\n|-damage|p2a: Glimmora|5/100\n|move|p2a: Glimmora|Earth Power|p1a: Jolteon\n|-supereffective|p1a: Jolteon\n|-damage|p1a: Jolteon|17/246\n|\n|upkeep\n|turn|7",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Thunderbolt\",\"id\":\"thunderbolt\",\"pp\":19,\"maxpp\":24,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Alluring Voice\",\"id\":\"alluringvoice\",\"pp\":16,\"maxpp\":16,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Calm Mind\",\"id\":\"calmmind\",\"pp\":32,\"maxpp\":32,\"target\":\"self\",\"disabled\":false},{\"move\":\"Volt Switch\",\"id\":\"voltswitch\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false}],\"canTerastallize\":\"Electric\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"17/246\",\"active\":true,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"564/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"}]},\"rqid\":18}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p1a: Jolteon|Thunderbolt|p2a: Glimmora\n|-damage|p2a: Glimmora|0 fnt\n|faint|p2a: Glimmora\n|\n|upkeep",
+  ">battle-gen9randombattle-2145\n|request|{\"wait\":true,\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"17/246\",\"active\":true,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"564/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"}]},\"rqid\":20}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|switch|p2a: Volbeat|Volbeat, L90, M|100/100\n|turn|8",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Thunderbolt\",\"id\":\"thunderbolt\",\"pp\":18,\"maxpp\":24,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Alluring Voice\",\"id\":\"alluringvoice\",\"pp\":16,\"maxpp\":16,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Calm Mind\",\"id\":\"calmmind\",\"pp\":32,\"maxpp\":32,\"target\":\"self\",\"disabled\":false},{\"move\":\"Volt Switch\",\"id\":\"voltswitch\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false}],\"canTerastallize\":\"Electric\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"17/246\",\"active\":true,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"564/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"}]},\"rqid\":22}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p1a: Jolteon|Thunderbolt|p2a: Volbeat\n|-damage|p2a: Volbeat|65/100\n|move|p2a: Volbeat|U-turn|p1a: Jolteon\n|-damage|p1a: Jolteon|0 fnt\n|faint|p1a: Jolteon",
+  ">battle-gen9randombattle-2145\n|request|{\"wait\":true,\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"0 fnt\",\"active\":true,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"564/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"}]},\"rqid\":24}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|switch|p2a: Grumpig|Grumpig, L92, M|100/100|[from] U-turn\n|\n|upkeep",
+  ">battle-gen9randombattle-2145\n|request|{\"forceSwitch\":[true],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"0 fnt\",\"active\":true,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"564/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"}]},\"noCancel\":true,\"rqid\":26}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|switch|p1a: Porygon2|Porygon2, L81|270/270\n|-damage|p1a: Porygon2|237/270|[from] Stealth Rock\n|-damage|p1a: Porygon2|204/270|[from] Spikes\n|-ability|p1a: Porygon2|Download|boost\n|-boost|p1a: Porygon2|atk|1\n|turn|9",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Tera Blast\",\"id\":\"terablast\",\"pp\":16,\"maxpp\":16,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Thunder Wave\",\"id\":\"thunderwave\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Recover\",\"id\":\"recover\",\"pp\":8,\"maxpp\":8,\"target\":\"self\",\"disabled\":false},{\"move\":\"Shadow Ball\",\"id\":\"shadowball\",\"pp\":24,\"maxpp\":24,\"target\":\"normal\",\"disabled\":false}],\"canTerastallize\":\"Fighting\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"204/270\",\"active\":true,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"564/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"}]},\"rqid\":28}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p2a: Grumpig|Focus Blast|p1a: Porygon2\n|-supereffective|p1a: Porygon2\n|-crit|p1a: Porygon2\n|-damage|p1a: Porygon2|32/270\n|move|p1a: Porygon2|Shadow Ball|p2a: Grumpig\n|-supereffective|p2a: Grumpig\n|-damage|p2a: Grumpig|71/100\n|-unboost|p2a: Grumpig|spd|1\n|\n|upkeep\n|turn|10",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Tera Blast\",\"id\":\"terablast\",\"pp\":16,\"maxpp\":16,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Thunder Wave\",\"id\":\"thunderwave\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Recover\",\"id\":\"recover\",\"pp\":8,\"maxpp\":8,\"target\":\"self\",\"disabled\":false},{\"move\":\"Shadow Ball\",\"id\":\"shadowball\",\"pp\":23,\"maxpp\":24,\"target\":\"normal\",\"disabled\":false}],\"canTerastallize\":\"Fighting\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"32/270\",\"active\":true,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"564/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"}]},\"rqid\":30}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p2a: Grumpig|Focus Blast|p1a: Porygon2\n|-supereffective|p1a: Porygon2\n|-damage|p1a: Porygon2|0 fnt\n|faint|p1a: Porygon2\n|\n|upkeep",
+  ">battle-gen9randombattle-2145\n|request|{\"forceSwitch\":[true],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"0 fnt\",\"active\":true,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"564/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"}]},\"noCancel\":true,\"rqid\":32}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|switch|p1a: Chansey|Chansey, L85, F|564/564\n|-damage|p1a: Chansey|494/564|[from] Stealth Rock\n|-damage|p1a: Chansey|424/564|[from] Spikes\n|turn|11",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Soft-Boiled\",\"id\":\"softboiled\",\"pp\":8,\"maxpp\":8,\"target\":\"self\",\"disabled\":false},{\"move\":\"Thunder Wave\",\"id\":\"thunderwave\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Seismic Toss\",\"id\":\"seismictoss\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Heal Bell\",\"id\":\"healbell\",\"pp\":8,\"maxpp\":8,\"target\":\"allyTeam\",\"disabled\":false}],\"canTerastallize\":\"Poison\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"424/564\",\"active\":true,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"},{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"}]},\"rqid\":34}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p2a: Grumpig|Focus Blast|p1a: Chansey|[miss]\n|-miss|p2a: Grumpig|p1a: Chansey\n|move|p1a: Chansey|Seismic Toss|p2a: Grumpig\n|-damage|p2a: Grumpig|42/100\n|\n|upkeep\n|turn|12",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Soft-Boiled\",\"id\":\"softboiled\",\"pp\":8,\"maxpp\":8,\"target\":\"self\",\"disabled\":false},{\"move\":\"Thunder Wave\",\"id\":\"thunderwave\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Seismic Toss\",\"id\":\"seismictoss\",\"pp\":31,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Heal Bell\",\"id\":\"healbell\",\"pp\":8,\"maxpp\":8,\"target\":\"allyTeam\",\"disabled\":false}],\"canTerastallize\":\"Poison\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"424/564\",\"active\":true,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"},{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"}]},\"rqid\":36}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p2a: Grumpig|Focus Blast|p1a: Chansey\n|-supereffective|p1a: Chansey\n|-damage|p1a: Chansey|320/564\n|move|p1a: Chansey|Seismic Toss|p2a: Grumpig\n|-damage|p2a: Grumpig|14/100\n|\n|upkeep\n|turn|13",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Soft-Boiled\",\"id\":\"softboiled\",\"pp\":8,\"maxpp\":8,\"target\":\"self\",\"disabled\":false},{\"move\":\"Thunder Wave\",\"id\":\"thunderwave\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Seismic Toss\",\"id\":\"seismictoss\",\"pp\":30,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Heal Bell\",\"id\":\"healbell\",\"pp\":8,\"maxpp\":8,\"target\":\"allyTeam\",\"disabled\":false}],\"canTerastallize\":\"Poison\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"320/564\",\"active\":true,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"},{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"}]},\"rqid\":38}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p2a: Grumpig|Focus Blast|p1a: Chansey\n|-supereffective|p1a: Chansey\n|-crit|p1a: Chansey\n|-damage|p1a: Chansey|154/564\n|move|p1a: Chansey|Seismic Toss|p2a: Grumpig\n|-damage|p2a: Grumpig|0 fnt\n|faint|p2a: Grumpig\n|\n|upkeep",
+  ">battle-gen9randombattle-2145\n|request|{\"wait\":true,\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"154/564\",\"active\":true,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"},{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"}]},\"rqid\":40}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|switch|p2a: Mandibuzz|Mandibuzz, L85, F|100/100\n|turn|14",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Soft-Boiled\",\"id\":\"softboiled\",\"pp\":8,\"maxpp\":8,\"target\":\"self\",\"disabled\":false},{\"move\":\"Thunder Wave\",\"id\":\"thunderwave\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Seismic Toss\",\"id\":\"seismictoss\",\"pp\":29,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Heal Bell\",\"id\":\"healbell\",\"pp\":8,\"maxpp\":8,\"target\":\"allyTeam\",\"disabled\":false}],\"canTerastallize\":\"Poison\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"154/564\",\"active\":true,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"},{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"}]},\"rqid\":42}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p2a: Mandibuzz|Foul Play|p1a: Chansey\n|-damage|p1a: Chansey|138/564\n|move|p1a: Chansey|Seismic Toss|p2a: Mandibuzz\n|-damage|p2a: Mandibuzz|74/100\n|\n|upkeep\n|turn|15",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Soft-Boiled\",\"id\":\"softboiled\",\"pp\":8,\"maxpp\":8,\"target\":\"self\",\"disabled\":false},{\"move\":\"Thunder Wave\",\"id\":\"thunderwave\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Seismic Toss\",\"id\":\"seismictoss\",\"pp\":28,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Heal Bell\",\"id\":\"healbell\",\"pp\":8,\"maxpp\":8,\"target\":\"allyTeam\",\"disabled\":false}],\"canTerastallize\":\"Poison\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"138/564\",\"active\":true,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"},{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"}]},\"rqid\":44}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p2a: Mandibuzz|Foul Play|p1a: Chansey\n|-damage|p1a: Chansey|123/564\n|move|p1a: Chansey|Seismic Toss|p2a: Mandibuzz\n|-damage|p2a: Mandibuzz|48/100\n|\n|upkeep\n|turn|16",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Soft-Boiled\",\"id\":\"softboiled\",\"pp\":8,\"maxpp\":8,\"target\":\"self\",\"disabled\":false},{\"move\":\"Thunder Wave\",\"id\":\"thunderwave\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Seismic Toss\",\"id\":\"seismictoss\",\"pp\":27,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Heal Bell\",\"id\":\"healbell\",\"pp\":8,\"maxpp\":8,\"target\":\"allyTeam\",\"disabled\":false}],\"canTerastallize\":\"Poison\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"123/564\",\"active\":true,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"},{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"}]},\"rqid\":46}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p2a: Mandibuzz|Foul Play|p1a: Chansey\n|-damage|p1a: Chansey|107/564\n|move|p1a: Chansey|Seismic Toss|p2a: Mandibuzz\n|-damage|p2a: Mandibuzz|22/100\n|\n|upkeep\n|turn|17",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Soft-Boiled\",\"id\":\"softboiled\",\"pp\":8,\"maxpp\":8,\"target\":\"self\",\"disabled\":false},{\"move\":\"Thunder Wave\",\"id\":\"thunderwave\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Seismic Toss\",\"id\":\"seismictoss\",\"pp\":26,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Heal Bell\",\"id\":\"healbell\",\"pp\":8,\"maxpp\":8,\"target\":\"allyTeam\",\"disabled\":false}],\"canTerastallize\":\"Poison\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"107/564\",\"active\":true,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"},{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"}]},\"rqid\":48}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p2a: Mandibuzz|Foul Play|p1a: Chansey\n|-damage|p1a: Chansey|91/564\n|move|p1a: Chansey|Seismic Toss|p2a: Mandibuzz\n|-damage|p2a: Mandibuzz|0 fnt\n|faint|p2a: Mandibuzz\n|\n|upkeep",
+  ">battle-gen9randombattle-2145\n|request|{\"wait\":true,\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"91/564\",\"active\":true,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"},{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"}]},\"rqid\":50}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|switch|p2a: Volbeat|Volbeat, L90, M|65/100\n|turn|18",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Soft-Boiled\",\"id\":\"softboiled\",\"pp\":8,\"maxpp\":8,\"target\":\"self\",\"disabled\":false},{\"move\":\"Thunder Wave\",\"id\":\"thunderwave\",\"pp\":32,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Seismic Toss\",\"id\":\"seismictoss\",\"pp\":25,\"maxpp\":32,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Heal Bell\",\"id\":\"healbell\",\"pp\":8,\"maxpp\":8,\"target\":\"allyTeam\",\"disabled\":false}],\"canTerastallize\":\"Poison\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"91/564\",\"active\":true,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"292/292\",\"active\":false,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"},{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"}]},\"rqid\":52}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|switch|p1a: Annihilape|Annihilape, L76, F|292/292\n|-damage|p1a: Annihilape|274/292|[from] Stealth Rock\n|-damage|p1a: Annihilape|238/292|[from] Spikes\n|move|p2a: Volbeat|U-turn|p1a: Annihilape\n|-resisted|p1a: Annihilape\n|-damage|p1a: Annihilape|217/292\n|\n|-heal|p1a: Annihilape|235/292|[from] item: Leftovers\n|upkeep\n|turn|19",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Drain Punch\",\"id\":\"drainpunch\",\"pp\":16,\"maxpp\":16,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Rage Fist\",\"id\":\"ragefist\",\"pp\":16,\"maxpp\":16,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Gunk Shot\",\"id\":\"gunkshot\",\"pp\":8,\"maxpp\":8,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Bulk Up\",\"id\":\"bulkup\",\"pp\":32,\"maxpp\":32,\"target\":\"self\",\"disabled\":false}],\"canTerastallize\":\"Fairy\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"235/292\",\"active\":true,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"91/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"},{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"}]},\"rqid\":54}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p2a: Volbeat|U-turn|p1a: Annihilape\n|-resisted|p1a: Annihilape\n|-damage|p1a: Annihilape|216/292\n|move|p1a: Annihilape|Gunk Shot|p2a: Volbeat\n|-damage|p2a: Volbeat|34/100\n|\n|-heal|p1a: Annihilape|234/292|[from] item: Leftovers\n|upkeep\n|turn|20",
+  ">battle-gen9randombattle-2145\n|request|{\"active\":[{\"moves\":[{\"move\":\"Drain Punch\",\"id\":\"drainpunch\",\"pp\":16,\"maxpp\":16,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Rage Fist\",\"id\":\"ragefist\",\"pp\":16,\"maxpp\":16,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Gunk Shot\",\"id\":\"gunkshot\",\"pp\":7,\"maxpp\":8,\"target\":\"normal\",\"disabled\":false},{\"move\":\"Bulk Up\",\"id\":\"bulkup\",\"pp\":32,\"maxpp\":32,\"target\":\"self\",\"disabled\":false}],\"canTerastallize\":\"Fairy\"}],\"side\":{\"name\":\"srl rec ee98\",\"id\":\"p1\",\"pokemon\":[{\"ident\":\"p1: Annihilape\",\"details\":\"Annihilape, L76, F\",\"condition\":\"234/292\",\"active\":true,\"stats\":{\"atk\":219,\"def\":166,\"spa\":120,\"spd\":181,\"spe\":181},\"moves\":[\"drainpunch\",\"ragefist\",\"gunkshot\",\"bulkup\"],\"baseAbility\":\"defiant\",\"item\":\"leftovers\",\"pokeball\":\"pokeball\",\"ability\":\"defiant\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fairy\",\"terastallized\":\"\"},{\"ident\":\"p1: Chansey\",\"details\":\"Chansey, L85, F\",\"condition\":\"91/564\",\"active\":false,\"stats\":{\"atk\":13,\"def\":57,\"spa\":108,\"spd\":227,\"spe\":134},\"moves\":[\"softboiled\",\"thunderwave\",\"seismictoss\",\"healbell\"],\"baseAbility\":\"naturalcure\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"naturalcure\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Poison\",\"terastallized\":\"\"},{\"ident\":\"p1: Rillaboom\",\"details\":\"Rillaboom, L79, M\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":243,\"def\":188,\"spa\":140,\"spd\":156,\"spe\":180},\"moves\":[\"woodhammer\",\"grassyglide\",\"highhorsepower\",\"uturn\"],\"baseAbility\":\"grassysurge\",\"item\":\"choiceband\",\"pokeball\":\"pokeball\",\"ability\":\"grassysurge\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Grass\",\"terastallized\":\"\"},{\"ident\":\"p1: Slither Wing\",\"details\":\"Slither Wing, L81\",\"condition\":\"270/270\",\"active\":false,\"stats\":{\"atk\":265,\"def\":175,\"spa\":184,\"spd\":217,\"spe\":178},\"moves\":[\"wildcharge\",\"bulkup\",\"flamecharge\",\"closecombat\"],\"baseAbility\":\"protosynthesis\",\"item\":\"boosterenergy\",\"pokeball\":\"pokeball\",\"ability\":\"protosynthesis\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"},{\"ident\":\"p1: Porygon2\",\"details\":\"Porygon2, L81\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":176,\"def\":192,\"spa\":217,\"spd\":201,\"spe\":144},\"moves\":[\"terablast\",\"thunderwave\",\"recover\",\"shadowball\"],\"baseAbility\":\"download\",\"item\":\"eviolite\",\"pokeball\":\"pokeball\",\"ability\":\"download\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Fighting\",\"terastallized\":\"\"},{\"ident\":\"p1: Jolteon\",\"details\":\"Jolteon, L84, F\",\"condition\":\"0 fnt\",\"active\":false,\"stats\":{\"atk\":114,\"def\":149,\"spa\":233,\"spd\":208,\"spe\":267},\"moves\":[\"thunderbolt\",\"alluringvoice\",\"calmmind\",\"voltswitch\"],\"baseAbility\":\"voltabsorb\",\"item\":\"heavydutyboots\",\"pokeball\":\"pokeball\",\"ability\":\"voltabsorb\",\"commanding\":false,\"reviving\":false,\"teraType\":\"Electric\",\"terastallized\":\"\"}]},\"rqid\":56}",
+  ">battle-gen9randombattle-2145\n|\n|t:|1790622933\n|move|p2a: Volbeat|U-turn|p1a: Annihilape\n|-resisted|p1a: Annihilape\n|-crit|p1a: Annihilape\n|-damage|p1a: Annihilape|206/292\n|move|p1a: Annihilape|Gunk Shot|p2a: Volbeat\n|-damage|p2a: Volbeat|3/100\n|-status|p2a: Volbeat|psn\n|\n|-heal|p1a: Annihilape|224/292|[from] item: Leftovers\n|-damage|p2a: Volbeat|0 fnt|[from] psn\n|faint|p2a: Volbeat\n|\n|win|srl rec ee98",
+  ">battle-gen9randombattle-2145\n|deinit"
+ ],
+ "decisions": [
+  {
+   "after_message": 5,
+   "summary": {
+    "role": "p1",
+    "turn": 1,
+    "active": "rillaboom",
+    "active_hp": [
+     288,
+     288
+    ],
+    "opponent": "chienpao",
+    "opponent_hp_fraction": 1.0,
+    "moves": [
+     "woodhammer",
+     "grassyglide",
+     "highhorsepower",
+     "uturn"
+    ],
+    "switches": [
+     "annihilape",
+     "jolteon",
+     "slitherwing",
+     "chansey",
+     "porygon2"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move woodhammer"
+  },
+  {
+   "after_message": 7,
+   "summary": {
+    "role": "p1",
+    "turn": 1,
+    "active": "rillaboom",
+    "active_hp": [
+     0,
+     288
+    ],
+    "opponent": "chienpao",
+    "opponent_hp_fraction": 0,
+    "moves": [],
+    "switches": [
+     "annihilape",
+     "jolteon",
+     "slitherwing",
+     "chansey",
+     "porygon2"
+    ],
+    "force_switch": true,
+    "can_tera": false,
+    "trapped": false
+   },
+   "order": "/choose switch Jolteon"
+  },
+  {
+   "after_message": 9,
+   "summary": {
+    "role": "p1",
+    "turn": 2,
+    "active": "jolteon",
+    "active_hp": [
+     246,
+     246
+    ],
+    "opponent": "forretress",
+    "opponent_hp_fraction": 1.0,
+    "moves": [
+     "thunderbolt",
+     "alluringvoice",
+     "calmmind",
+     "voltswitch"
+    ],
+    "switches": [
+     "annihilape",
+     "slitherwing",
+     "chansey",
+     "porygon2"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move thunderbolt"
+  },
+  {
+   "after_message": 11,
+   "summary": {
+    "role": "p1",
+    "turn": 3,
+    "active": "jolteon",
+    "active_hp": [
+     246,
+     246
+    ],
+    "opponent": "forretress",
+    "opponent_hp_fraction": 0.64,
+    "moves": [
+     "thunderbolt",
+     "alluringvoice",
+     "calmmind",
+     "voltswitch"
+    ],
+    "switches": [
+     "annihilape",
+     "slitherwing",
+     "chansey",
+     "porygon2"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move thunderbolt"
+  },
+  {
+   "after_message": 13,
+   "summary": {
+    "role": "p1",
+    "turn": 4,
+    "active": "jolteon",
+    "active_hp": [
+     246,
+     246
+    ],
+    "opponent": "forretress",
+    "opponent_hp_fraction": 0.23,
+    "moves": [
+     "thunderbolt",
+     "alluringvoice",
+     "calmmind",
+     "voltswitch"
+    ],
+    "switches": [
+     "annihilape",
+     "slitherwing",
+     "chansey",
+     "porygon2"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move thunderbolt"
+  },
+  {
+   "after_message": 17,
+   "summary": {
+    "role": "p1",
+    "turn": 5,
+    "active": "jolteon",
+    "active_hp": [
+     246,
+     246
+    ],
+    "opponent": "glimmora",
+    "opponent_hp_fraction": 1.0,
+    "moves": [
+     "thunderbolt",
+     "alluringvoice",
+     "calmmind",
+     "voltswitch"
+    ],
+    "switches": [
+     "annihilape",
+     "slitherwing",
+     "chansey",
+     "porygon2"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move thunderbolt"
+  },
+  {
+   "after_message": 19,
+   "summary": {
+    "role": "p1",
+    "turn": 6,
+    "active": "jolteon",
+    "active_hp": [
+     131,
+     246
+    ],
+    "opponent": "glimmora",
+    "opponent_hp_fraction": 0.58,
+    "moves": [
+     "thunderbolt",
+     "alluringvoice",
+     "calmmind",
+     "voltswitch"
+    ],
+    "switches": [
+     "annihilape",
+     "slitherwing",
+     "chansey",
+     "porygon2"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move thunderbolt"
+  },
+  {
+   "after_message": 21,
+   "summary": {
+    "role": "p1",
+    "turn": 7,
+    "active": "jolteon",
+    "active_hp": [
+     17,
+     246
+    ],
+    "opponent": "glimmora",
+    "opponent_hp_fraction": 0.05,
+    "moves": [
+     "thunderbolt",
+     "alluringvoice",
+     "calmmind",
+     "voltswitch"
+    ],
+    "switches": [
+     "annihilape",
+     "slitherwing",
+     "chansey",
+     "porygon2"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move thunderbolt"
+  },
+  {
+   "after_message": 25,
+   "summary": {
+    "role": "p1",
+    "turn": 8,
+    "active": "jolteon",
+    "active_hp": [
+     17,
+     246
+    ],
+    "opponent": "volbeat",
+    "opponent_hp_fraction": 1.0,
+    "moves": [
+     "thunderbolt",
+     "alluringvoice",
+     "calmmind",
+     "voltswitch"
+    ],
+    "switches": [
+     "annihilape",
+     "slitherwing",
+     "chansey",
+     "porygon2"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move thunderbolt"
+  },
+  {
+   "after_message": 29,
+   "summary": {
+    "role": "p1",
+    "turn": 8,
+    "active": "jolteon",
+    "active_hp": [
+     0,
+     246
+    ],
+    "opponent": "grumpig",
+    "opponent_hp_fraction": 1.0,
+    "moves": [],
+    "switches": [
+     "annihilape",
+     "slitherwing",
+     "chansey",
+     "porygon2"
+    ],
+    "force_switch": true,
+    "can_tera": false,
+    "trapped": false
+   },
+   "order": "/choose switch Porygon2"
+  },
+  {
+   "after_message": 31,
+   "summary": {
+    "role": "p1",
+    "turn": 9,
+    "active": "porygon2",
+    "active_hp": [
+     204,
+     270
+    ],
+    "opponent": "grumpig",
+    "opponent_hp_fraction": 1.0,
+    "moves": [
+     "terablast",
+     "thunderwave",
+     "recover",
+     "shadowball"
+    ],
+    "switches": [
+     "annihilape",
+     "slitherwing",
+     "chansey"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move shadowball"
+  },
+  {
+   "after_message": 33,
+   "summary": {
+    "role": "p1",
+    "turn": 10,
+    "active": "porygon2",
+    "active_hp": [
+     32,
+     270
+    ],
+    "opponent": "grumpig",
+    "opponent_hp_fraction": 0.71,
+    "moves": [
+     "terablast",
+     "thunderwave",
+     "recover",
+     "shadowball"
+    ],
+    "switches": [
+     "annihilape",
+     "slitherwing",
+     "chansey"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move shadowball"
+  },
+  {
+   "after_message": 35,
+   "summary": {
+    "role": "p1",
+    "turn": 10,
+    "active": "porygon2",
+    "active_hp": [
+     0,
+     270
+    ],
+    "opponent": "grumpig",
+    "opponent_hp_fraction": 0.71,
+    "moves": [],
+    "switches": [
+     "annihilape",
+     "slitherwing",
+     "chansey"
+    ],
+    "force_switch": true,
+    "can_tera": false,
+    "trapped": false
+   },
+   "order": "/choose switch Chansey"
+  },
+  {
+   "after_message": 37,
+   "summary": {
+    "role": "p1",
+    "turn": 11,
+    "active": "chansey",
+    "active_hp": [
+     424,
+     564
+    ],
+    "opponent": "grumpig",
+    "opponent_hp_fraction": 0.71,
+    "moves": [
+     "softboiled",
+     "thunderwave",
+     "seismictoss",
+     "healbell"
+    ],
+    "switches": [
+     "annihilape",
+     "slitherwing"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move seismictoss"
+  },
+  {
+   "after_message": 39,
+   "summary": {
+    "role": "p1",
+    "turn": 12,
+    "active": "chansey",
+    "active_hp": [
+     424,
+     564
+    ],
+    "opponent": "grumpig",
+    "opponent_hp_fraction": 0.42,
+    "moves": [
+     "softboiled",
+     "thunderwave",
+     "seismictoss",
+     "healbell"
+    ],
+    "switches": [
+     "annihilape",
+     "slitherwing"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move seismictoss"
+  },
+  {
+   "after_message": 41,
+   "summary": {
+    "role": "p1",
+    "turn": 13,
+    "active": "chansey",
+    "active_hp": [
+     320,
+     564
+    ],
+    "opponent": "grumpig",
+    "opponent_hp_fraction": 0.14,
+    "moves": [
+     "softboiled",
+     "thunderwave",
+     "seismictoss",
+     "healbell"
+    ],
+    "switches": [
+     "annihilape",
+     "slitherwing"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move seismictoss"
+  },
+  {
+   "after_message": 45,
+   "summary": {
+    "role": "p1",
+    "turn": 14,
+    "active": "chansey",
+    "active_hp": [
+     154,
+     564
+    ],
+    "opponent": "mandibuzz",
+    "opponent_hp_fraction": 1.0,
+    "moves": [
+     "softboiled",
+     "thunderwave",
+     "seismictoss",
+     "healbell"
+    ],
+    "switches": [
+     "annihilape",
+     "slitherwing"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move seismictoss"
+  },
+  {
+   "after_message": 47,
+   "summary": {
+    "role": "p1",
+    "turn": 15,
+    "active": "chansey",
+    "active_hp": [
+     138,
+     564
+    ],
+    "opponent": "mandibuzz",
+    "opponent_hp_fraction": 0.74,
+    "moves": [
+     "softboiled",
+     "thunderwave",
+     "seismictoss",
+     "healbell"
+    ],
+    "switches": [
+     "annihilape",
+     "slitherwing"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move seismictoss"
+  },
+  {
+   "after_message": 49,
+   "summary": {
+    "role": "p1",
+    "turn": 16,
+    "active": "chansey",
+    "active_hp": [
+     123,
+     564
+    ],
+    "opponent": "mandibuzz",
+    "opponent_hp_fraction": 0.48,
+    "moves": [
+     "softboiled",
+     "thunderwave",
+     "seismictoss",
+     "healbell"
+    ],
+    "switches": [
+     "annihilape",
+     "slitherwing"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move seismictoss"
+  },
+  {
+   "after_message": 51,
+   "summary": {
+    "role": "p1",
+    "turn": 17,
+    "active": "chansey",
+    "active_hp": [
+     107,
+     564
+    ],
+    "opponent": "mandibuzz",
+    "opponent_hp_fraction": 0.22,
+    "moves": [
+     "softboiled",
+     "thunderwave",
+     "seismictoss",
+     "healbell"
+    ],
+    "switches": [
+     "annihilape",
+     "slitherwing"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move seismictoss"
+  },
+  {
+   "after_message": 55,
+   "summary": {
+    "role": "p1",
+    "turn": 18,
+    "active": "chansey",
+    "active_hp": [
+     91,
+     564
+    ],
+    "opponent": "volbeat",
+    "opponent_hp_fraction": 0.65,
+    "moves": [
+     "softboiled",
+     "thunderwave",
+     "seismictoss",
+     "healbell"
+    ],
+    "switches": [
+     "annihilape",
+     "slitherwing"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose switch Annihilape"
+  },
+  {
+   "after_message": 57,
+   "summary": {
+    "role": "p1",
+    "turn": 19,
+    "active": "annihilape",
+    "active_hp": [
+     235,
+     292
+    ],
+    "opponent": "volbeat",
+    "opponent_hp_fraction": 0.65,
+    "moves": [
+     "drainpunch",
+     "ragefist",
+     "gunkshot",
+     "bulkup"
+    ],
+    "switches": [
+     "chansey",
+     "slitherwing"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move gunkshot"
+  },
+  {
+   "after_message": 59,
+   "summary": {
+    "role": "p1",
+    "turn": 20,
+    "active": "annihilape",
+    "active_hp": [
+     234,
+     292
+    ],
+    "opponent": "volbeat",
+    "opponent_hp_fraction": 0.34,
+    "moves": [
+     "drainpunch",
+     "ragefist",
+     "gunkshot",
+     "bulkup"
+    ],
+    "switches": [
+     "chansey",
+     "slitherwing"
+    ],
+    "force_switch": false,
+    "can_tera": true,
+    "trapped": false
+   },
+   "order": "/choose move gunkshot"
+  }
+ ]
+}

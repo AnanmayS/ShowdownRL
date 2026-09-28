@@ -8,7 +8,7 @@ teacher and an evaluation opponent.
 
 from __future__ import annotations
 
-from poke_env.battle import AbstractBattle, Battle, MoveCategory, Pokemon
+from poke_env.battle import AbstractBattle, Battle, MoveCategory, Pokemon, PokemonType, Status
 from poke_env.player import Player
 
 from showdownrl.battle_features import (
@@ -16,6 +16,7 @@ from showdownrl.battle_features import (
     HAZARD_REMOVAL,
     effective_speed,
     estimate_damage,
+    estimate_stat,
     hazard_entry_damage,
     opponent_threat,
     speed_advantage,
@@ -45,6 +46,36 @@ def _switch_score(mon: Pokemon, battle: Battle) -> float:
     if threat * 0.9 >= hp_after:
         score -= 0.5
     return score
+
+
+SLEEP_MOVES = {"spore", "sleeppowder", "hypnosis", "lovelykiss", "darkvoid", "sing", "grasswhistle"}
+POWDER_MOVES = {"spore", "sleeppowder", "stunspore", "poisonpowder"}
+
+
+def _status_move(battle: Battle, moves: list, faster: bool, our_best: float):
+    """A status-inflicting move worth using now, or None."""
+    opp = battle.opponent_active_pokemon
+    if opp is None or opp.status is not None:
+        return None
+    opp_types = set(opp.types)
+    sleeping = any(m.status == Status.SLP for m in battle.opponent_team.values() if not m.fainted)
+    for move in moves:
+        if move.category != MoveCategory.STATUS or (move.accuracy or 1) < 0.7:
+            continue
+        if move.id in POWDER_MOVES and PokemonType.GRASS in opp_types:
+            continue
+        if move.id in SLEEP_MOVES and not sleeping:
+            return move
+        if move.id == "thunderwave" and not faster and not opp_types & {
+                PokemonType.ELECTRIC, PokemonType.GROUND}:
+            return move
+        if move.id == "willowisp" and PokemonType.FIRE not in opp_types and \
+                estimate_stat(opp, "atk") > estimate_stat(opp, "spa") * 1.1:
+            return move
+        if move.id == "toxic" and our_best < 0.3 and not opp_types & {
+                PokemonType.POISON, PokemonType.STEEL}:
+            return move
+    return None
 
 
 def best_switch(battle: Battle):
@@ -114,6 +145,12 @@ def _choose_smart_move(battle: Battle):
                 and move.category == MoveCategory.STATUS:
             return Player.create_order(move)
 
+    # 3b. Cripple the opponent with status when it can't punish us for it.
+    if not we_die and threat < 0.5:
+        status = _status_move(battle, [m for m, _, _ in scored], faster, best_attack[1])
+        if status is not None:
+            return Player.create_order(status)
+
     # 4. Recover when healthy enough to matter.
     if me.current_hp_fraction < 0.5 and not we_die:
         for move, _, _ in scored:
@@ -130,6 +167,11 @@ def _choose_smart_move(battle: Battle):
 
     # 6. Strongest attack, terastallizing when it clearly helps.
     move, dmg, tera_dmg = max(scored, key=lambda x: max(x[1], x[2]))
+    if opp.item != "":  # unknown or still held
+        # Knock Off removes items (Leftovers, Boots, Choice) - worth a small damage loss.
+        for m, d, _ in scored:
+            if m.id == "knockoff" and d >= 0.8 * max(dmg, tera_dmg) and d * 0.9 < opp_hp:
+                move, dmg, tera_dmg = m, d, d
     if dmg <= 0.02:
         status_moves = [m for m, _, _ in scored if m.category == MoveCategory.STATUS]
         if status_moves and opp.status is None:

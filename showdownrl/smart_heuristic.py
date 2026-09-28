@@ -56,6 +56,14 @@ def best_switch(battle: Battle):
 
 def choose_smart_move(battle: AbstractBattle):
     assert isinstance(battle, Battle)
+    try:
+        return _choose_smart_move(battle)
+    except (KeyError, AttributeError, TypeError, ValueError):
+        # poke-env lacks dex data for a few pseudo-moves (e.g. "recharge").
+        return Player.choose_random_singles_move(battle)
+
+
+def _choose_smart_move(battle: Battle):
     me, opp = battle.active_pokemon, battle.opponent_active_pokemon
     if me is None or opp is None or not battle.available_moves:
         target = best_switch(battle)

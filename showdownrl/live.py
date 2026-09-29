@@ -317,8 +317,13 @@ async def click_locator(page: Any, locator: Any, label: str, delay: float = 0.75
     if not target:
         return False
 
-    await target.scroll_into_view_if_needed()
-    box = await target.bounding_box()
+    # The element can vanish between first_visible and here (e.g. Showdown auto-login
+    # replacing the Choose Name button); bound these waits instead of Playwright's 30s default.
+    try:
+        await target.scroll_into_view_if_needed(timeout=timeout_ms)
+        box = await target.bounding_box(timeout=timeout_ms)
+    except Exception:
+        return False
     if not box:
         return False
 
@@ -399,11 +404,15 @@ async def fill_first_visible(locator: Any, text: str) -> bool:
 
 async def login(page: Any, username: str, password: str, guest: bool, click_delay: float) -> str:
     userbar = page.locator(".userbar").filter(has_text=re.compile(re.escape(username), re.I))
-    if username and await userbar.count():
+    # After a reload Showdown restores the session asynchronously, so give the userbar a
+    # moment to show our name before deciding we need to log in.
+    if username and await first_visible(userbar, timeout_ms=6000):
         return "already logged in"
 
     choose_name = page.locator("button[name='login']")
     if not await click_locator(page, choose_name, "Choose Name", click_delay):
+        if username and await userbar.count():
+            return "already logged in"
         return "choose-name button not found"
 
     name_inputs = page.locator("input[name='username'], input[type='text'], input:not([type])")

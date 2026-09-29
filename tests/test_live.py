@@ -13,8 +13,10 @@ from showdownrl.live import (
     BrowserProtocol,
     LiveOptions,
     SelectorHealth,
+    click_locator,
     debug_turn_snapshot,
     infer_result,
+    login,
     selector_health_lines,
 )
 
@@ -156,6 +158,61 @@ class BrowserProtocolTests(unittest.TestCase):
         # The next poll rebuilds from scratch but remembers the answered request.
         again = asyncio.run(protocol.refresh(page))
         self.assertFalse(again.needs_decision)
+
+
+class FakeLocator:
+    """Locator whose element becomes visible after `appears_after` count() polls."""
+
+    def __init__(self, appears_after: int = 0, vanishes: bool = False):
+        self.appears_after = appears_after
+        self.vanishes = vanishes
+        self.polls = 0
+        self.clicked = False
+
+    def filter(self, **_: Any) -> "FakeLocator":
+        return self
+
+    def nth(self, _: int) -> "FakeLocator":
+        return self
+
+    async def count(self) -> int:
+        self.polls += 1
+        return 1 if self.polls > self.appears_after else 0
+
+    async def is_visible(self) -> bool:
+        return True
+
+    async def scroll_into_view_if_needed(self, timeout: float | None = None) -> None:
+        pass
+
+    async def bounding_box(self, timeout: float | None = None) -> dict[str, float] | None:
+        if self.vanishes:
+            raise TimeoutError("Locator.bounding_box: Timeout exceeded.")
+        return {"x": 0, "y": 0, "width": 10, "height": 10}
+
+
+class FakeLoginPage:
+    def __init__(self, locators: dict[str, FakeLocator]):
+        self.locators = locators
+
+    def locator(self, selector: str) -> FakeLocator:
+        return self.locators[selector]
+
+
+class LiveLoginTests(unittest.TestCase):
+    def test_click_locator_returns_false_when_element_vanishes(self) -> None:
+        page = FakeLoginPage({})
+        clicked = asyncio.run(click_locator(page, FakeLocator(vanishes=True), "Choose Name", delay=0))
+        self.assertFalse(clicked)
+
+    def test_login_waits_for_restored_session_after_reload(self) -> None:
+        # Userbar shows our name only after a few polls, like Showdown's async session restore.
+        userbar = FakeLocator(appears_after=3)
+        choose_name = FakeLocator(vanishes=True)
+        page = FakeLoginPage({".userbar": userbar, "button[name='login']": choose_name})
+        result = asyncio.run(login(page, "arosTar", "", guest=False, click_delay=0))
+        self.assertEqual(result, "already logged in")
+        self.assertEqual(choose_name.polls, 0)
 
 
 if __name__ == "__main__":

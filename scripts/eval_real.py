@@ -19,6 +19,7 @@ import argparse
 import asyncio
 import json
 import math
+import os
 import sys
 import time
 from pathlib import Path
@@ -60,7 +61,7 @@ def make_player(spec: str, port: int, concurrency: int, deterministic: bool,
         battle_format=BATTLE_FORMAT,
         server_configuration=server_configuration(port),
         max_concurrent_battles=concurrency,
-        account_configuration=AccountConfiguration(f"ev{_counter}{int(time.time()) % 100000}", None),
+        account_configuration=AccountConfiguration(f"ev{_counter}p{os.getpid() % 1000}t{int(time.time()) % 100000}", None),
         log_level=40,
     )
     if spec in SCRIPTED:

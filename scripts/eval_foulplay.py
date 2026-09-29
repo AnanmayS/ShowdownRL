@@ -252,6 +252,8 @@ def evaluate(args: argparse.Namespace) -> dict:
     signal.signal(signal.SIGTERM, _sig)
     agent = None
     durations: list[float] = []
+    void_tags: set[str] = set()
+    restarts = 0
     try:
         agent = make_agent(args.agent, args.port, not args.stochastic, args.agent_search_workers)
         deadline = time.time() + 30
@@ -261,9 +263,30 @@ def evaluate(args: argparse.Namespace) -> dict:
             time.sleep(0.05)
 
         start = time.time()
+        offset = 0  # battles played by earlier (restarted) Foul Play processes
         for i in range(args.n):
             t0 = time.time()
-            play_one(agent, fp, i, args.accept_timeout, args.battle_timeout)
+            try:
+                play_one(agent, fp, i - offset, args.accept_timeout, args.battle_timeout)
+            except (TimeoutError, RuntimeError) as exc:
+                # Foul Play occasionally hangs inside its search. Forfeit the stuck
+                # battle, exclude it from the stats and restart Foul Play.
+                print(f"[{i + 1}/{args.n}] voided: {exc}; restarting Foul Play", flush=True)
+                for tag, battle in list(agent.battles.items()):
+                    if not battle.finished:
+                        void_tags.add(tag)
+                        try:
+                            on_poke_loop(agent.ps_client.send_message("/forfeit", tag), timeout=10)
+                        except Exception:
+                            pass
+                fp.stop()
+                restarts += 1
+                fp_name = f"foulplay{os.getpid() % 100000}r{restarts}"
+                fp = FoulPlayProcess(fp_dir, python, fp_name, args.port, args.search_time_ms,
+                                     args.search_parallelism, args.n - i, log_path.with_name(
+                                         f"{fp_name}.log"), entry=entry, extra_env=extra_env)
+                offset = i + 1
+                continue
             durations.append(time.time() - t0)
             if args.verbose or (i + 1) % 10 == 0 or i + 1 == args.n:
                 w, f = agent.n_won_battles, agent.n_finished_battles
@@ -279,13 +302,14 @@ def evaluate(args: argparse.Namespace) -> dict:
             except Exception:
                 pass
 
-    wins = agent.n_won_battles if agent else 0
-    finished = agent.n_finished_battles if agent else 0
-    ties = agent.n_tied_battles if agent else 0
+    done = [b for tag, b in (agent.battles.items() if agent else []) if b.finished
+            and tag not in void_tags]
+    wins = sum(1 for b in done if b.won)
+    finished = len(done)
+    ties = sum(1 for b in done if not b.won and not b.lost)
     lo, hi = wilson(wins, finished)
     elapsed = sum(durations)
     # KO counts give signal even when the win rate is ~0.
-    done = [b for b in (agent.battles.values() if agent else []) if b.finished]
     opp_ko = sum(sum(m.fainted for m in b.opponent_team.values()) for b in done)
     own_ko = sum(sum(m.fainted for m in b.team.values()) for b in done)
     turns = sum(b.turn for b in done)
@@ -298,6 +322,8 @@ def evaluate(args: argparse.Namespace) -> dict:
         "deterministic": not args.stochastic,
         "wins": wins,
         "ties": ties,
+        "voided": len(void_tags),
+        "foulplay_restarts": restarts,
         "battles": finished,
         "win_rate": wins / max(finished, 1),
         "ci95": [lo, hi],

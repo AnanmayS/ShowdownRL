@@ -171,14 +171,34 @@ class SearchLivePolicy(LivePolicy):
         self.time_ms = time_ms
         self.prior_weight = prior_weight
         self.stats = SearchStats()
+        self._executor = None
+
+    def _get_executor(self):
+        if self._executor is None:
+            import multiprocessing as mp
+            from concurrent.futures import ProcessPoolExecutor
+
+            self._executor = ProcessPoolExecutor(max_workers=min(self.n_samples, 2),
+                                                 mp_context=mp.get_context("spawn"))
+        return self._executor
+
+    def close(self) -> None:
+        from showdownrl.search import kill_executor
+
+        kill_executor(self._executor)
+        self._executor = None
 
     def choose(self, battle: Any) -> Decision:
         from poke_env.environment import SinglesEnv
 
         from showdownrl.search import search_policy
 
+        fallbacks = self.stats.fallbacks
         order = search_policy(battle, self.model, n_samples=self.n_samples, time_ms=self.time_ms,
-                              prior_weight=self.prior_weight, stats=self.stats)
+                              prior_weight=self.prior_weight, stats=self.stats,
+                              executor=self._get_executor())
+        if self.stats.fallbacks > fallbacks and "Timeout" in (self.stats.last_error or ""):
+            self.close()  # kill hung engine workers; a fresh pool starts next decision
         action = None
         try:
             action = int(SinglesEnv.order_to_action(order, battle, strict=False))

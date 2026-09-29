@@ -905,8 +905,12 @@ def _decide(battle: Battle, model: Any, cfg: SearchConfig, mask: np.ndarray, res
 def search_policy(battle: Battle, model: Any = None, n_samples: int = 4, time_ms: int = 100,
                   prior_weight: float = 0.0, unrevealed: str = "sample",
                   rng: Optional[random.Random] = None, stats: Optional[SearchStats] = None,
-                  iterations: int = 0) -> BattleOrder:
-    """Synchronous search decision (engine runs inline in this thread)."""
+                  iterations: int = 0, executor: Optional[Executor] = None) -> BattleOrder:
+    """Synchronous search decision.
+
+    With ``executor`` (a process pool) the engine runs out of process under a
+    watchdog timeout; otherwise it runs inline in this thread.
+    """
     cfg = SearchConfig(n_samples, time_ms, prior_weight, unrevealed, iterations)
     stats = stats if stats is not None else SearchStats()
     rng = rng or random.Random()
@@ -920,7 +924,10 @@ def search_policy(battle: Battle, model: Any = None, n_samples: int = 4, time_ms
     try:
         t0 = time.perf_counter()
         state_strs, cmap = _prepare(battle, cfg, rng)
-        results = [mcts_worker(s, cfg.time_ms, cfg.iterations) for s in state_strs]
+        if executor is not None:
+            results = run_searches(executor, state_strs, cfg)
+        else:
+            results = [mcts_worker(s, cfg.time_ms, cfg.iterations) for s in state_strs]
         stats.search_seconds += time.perf_counter() - t0
         stats.searched += 1
         return _decide(battle, model, cfg, mask, results, cmap, stats)
@@ -929,6 +936,35 @@ def search_policy(battle: Battle, model: Any = None, n_samples: int = 4, time_ms
         stats.fallbacks += 1
         stats.last_error = f"{type(exc).__name__}: {exc}"
         return fallback_order(battle, model, mask)
+
+
+def search_timeout_s(cfg: "SearchConfig") -> float:
+    """Generous wall-clock limit for one decision's searches (they normally take n*time_ms)."""
+    return 10.0 + 4.0 * cfg.n_samples * cfg.time_ms / 1000.0
+
+
+def kill_executor(executor: Optional[Executor]) -> None:
+    """Shut down a process pool and terminate workers stuck inside the engine."""
+    if executor is None:
+        return
+    processes = list(getattr(executor, "_processes", {}).values())
+    executor.shutdown(wait=False, cancel_futures=True)
+    for proc in processes:
+        try:
+            proc.terminate()
+        except Exception:  # noqa: BLE001 - already gone
+            pass
+
+
+def run_searches(executor: Executor, state_strs: Sequence[str], cfg: "SearchConfig") -> list:
+    """Run one MCTS per sampled state in ``executor``; raise TimeoutError if they hang."""
+    import concurrent.futures as cf
+
+    futures = [executor.submit(mcts_worker, s, cfg.time_ms, cfg.iterations) for s in state_strs]
+    done, pending = cf.wait(futures, timeout=search_timeout_s(cfg))
+    if pending:
+        raise TimeoutError(f"{len(pending)} of {len(futures)} searches exceeded {search_timeout_s(cfg):.0f}s")
+    return [f.result() for f in futures]
 
 
 class SearchPlayer(Player):
@@ -1005,14 +1041,15 @@ class SearchPlayer(Player):
             executor = self._get_executor()
             futures = [loop.run_in_executor(executor, mcts_worker, s, cfg.time_ms, cfg.iterations)
                        for s in state_strs]
-            results = await asyncio.gather(*futures)
+            results = await asyncio.wait_for(asyncio.gather(*futures), timeout=search_timeout_s(cfg))
             stats.search_seconds += time.perf_counter() - t0
             stats.searched += 1
             order = _decide(battle, self.model, cfg, mask, results, cmap, stats)
-        except BrokenProcessPool as exc:
+        except (BrokenProcessPool, asyncio.TimeoutError, TimeoutError) as exc:
+            kill_executor(self._executor)
             self._executor = None  # recreate on the next decision
             stats.fallbacks += 1
-            stats.last_error = f"BrokenProcessPool: {exc}"
+            stats.last_error = f"{type(exc).__name__}: {exc}"
             order = fallback_order(battle, self.model, mask)
         except Exception as exc:
             LOGGER.debug("search failed", exc_info=True)

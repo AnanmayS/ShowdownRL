@@ -4,6 +4,13 @@
 Examples:
     python scripts/eval_real.py --agent smart --opponents heuristic,max_power --n 1000
     python scripts/eval_real.py --agent models/real/ppo.zip --n 1000 --json results/eval.json
+    python scripts/eval_real.py --agent search:models/real/bc_fp_r2.zip,samples=4,time_ms=100,prior=0.3 \
+        --opponents heuristic,smart --n 300 --port 8002 --search-workers 2
+
+Search agents (showdownrl.search.SearchPlayer, needs the ``search`` extra):
+``search[:MODEL.zip][,samples=N][,time_ms=T][,prior=LAMBDA][,unrevealed=sample|fainted]
+[,iterations=K][,workers=W]``. Without a model the fallback is the smart heuristic
+and ``prior`` must be 0.
 """
 
 from __future__ import annotations
@@ -45,7 +52,8 @@ def wilson(wins: int, n: int, z: float = 1.96) -> tuple[float, float]:
 _counter = 0
 
 
-def make_player(spec: str, port: int, concurrency: int, deterministic: bool) -> Player:
+def make_player(spec: str, port: int, concurrency: int, deterministic: bool,
+                search_workers: int = 2) -> Player:
     global _counter
     _counter += 1
     kwargs = dict(
@@ -57,6 +65,11 @@ def make_player(spec: str, port: int, concurrency: int, deterministic: bool) -> 
     )
     if spec in SCRIPTED:
         return SCRIPTED[spec](**kwargs)
+    if spec.startswith("search"):
+        from showdownrl.search import SearchPlayer, parse_search_spec
+
+        options = {"workers": search_workers, **parse_search_spec(spec)}
+        return SearchPlayer(**options, **kwargs)
     from sb3_contrib import MaskablePPO
 
     model = MaskablePPO.load(spec, device="cpu")
@@ -64,10 +77,10 @@ def make_player(spec: str, port: int, concurrency: int, deterministic: bool) -> 
 
 
 async def evaluate(agent_spec: str, opponents: list[str], n: int, port: int,
-                   concurrency: int, deterministic: bool) -> dict:
+                   concurrency: int, deterministic: bool, search_workers: int = 2) -> dict:
     results = {}
     for opp_spec in opponents:
-        agent = make_player(agent_spec, port, concurrency, deterministic)
+        agent = make_player(agent_spec, port, concurrency, deterministic, search_workers)
         opponent = make_player(opp_spec, port, concurrency, deterministic)
         start = time.time()
         await agent.battle_against(opponent, n_battles=n)
@@ -81,8 +94,20 @@ async def evaluate(agent_spec: str, opponents: list[str], n: int, port: int,
             "ci95": [lo, hi],
             "seconds": round(time.time() - start, 1),
         }
+        extra = ""
+        if hasattr(agent, "stats") and hasattr(agent, "decision_seconds"):
+            secs = agent.decision_seconds
+            results[opp_spec]["search"] = {
+                **agent.stats.as_dict(),
+                "seconds_per_decision": round(sum(secs) / max(len(secs), 1), 4),
+                "decisions_per_battle": round(len(secs) / max(finished, 1), 1),
+            }
+            s = results[opp_spec]["search"]
+            extra = (f" [{s['seconds_per_decision']}s/decision, fallbacks {s['fallbacks']}, "
+                     f"engine errors {s['engine_errors']}, {s['iterations_per_sample']} it/sample]")
+            agent.close_executor()
         print(f"{agent_spec} vs {opp_spec}: {wins}/{finished} = {wins / max(finished, 1):.3f} "
-              f"(95% CI {lo:.3f}-{hi:.3f}) in {time.time() - start:.0f}s", flush=True)
+              f"(95% CI {lo:.3f}-{hi:.3f}) in {time.time() - start:.0f}s{extra}", flush=True)
         for player in (agent, opponent):
             try:
                 await player.ps_client.stop_listening()
@@ -100,10 +125,12 @@ def main() -> None:
     parser.add_argument("--concurrency", type=int, default=16)
     parser.add_argument("--stochastic", action="store_true", help="sample policy actions")
     parser.add_argument("--json", type=str, default=None)
+    parser.add_argument("--search-workers", type=int, default=2,
+                        help="engine worker processes for search agents (0 = inline)")
     args = parser.parse_args()
 
     results = asyncio.run(evaluate(args.agent, args.opponents.split(","), args.n, args.port,
-                                   args.concurrency, not args.stochastic))
+                                   args.concurrency, not args.stochastic, args.search_workers))
     if args.json:
         path = Path(args.json)
         path.parent.mkdir(parents=True, exist_ok=True)

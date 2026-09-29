@@ -41,6 +41,16 @@ rl = [
   "torch",
 ]
 
+# Decision-time search (showdownrl/search.py). poke-engine ships only as an sdist
+# (needs a Rust toolchain) and its default cargo feature is gen4, so it MUST be
+# built with the gen9 terastallization feature, e.g.
+#   CARGO_BUILD_JOBS=2 pip install --no-binary poke-engine poke-engine==0.0.48 \
+#     --config-settings="build-args=--features poke-engine/terastallization --no-default-features"
+# A plain `pip install .[search]` builds the gen4 engine (no tera, wrong mechanics).
+search = [
+  "poke-engine==0.0.48",
+]
+
 [project.scripts]
 showdownrl = "showdownrl.cli:main"
 

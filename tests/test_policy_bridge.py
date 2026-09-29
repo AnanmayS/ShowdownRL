@@ -82,3 +82,28 @@ class PolicyBridgeTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_search_live_policy_returns_valid_order():
+    import pytest
+
+    search = pytest.importorskip("showdownrl.search")
+    if not search.ENGINE_AVAILABLE or not search.engine_is_gen9():
+        pytest.skip("poke-engine (gen9 build) not installed")
+    from pathlib import Path
+
+    from showdownrl.policy_bridge import SearchLivePolicy, order_is_valid
+    from tests.test_battle_features import REQUEST, Battle, logging
+
+    model = Path("models/real/bc_fp_r2.zip")
+    if not model.exists():
+        pytest.skip("no trained real-simulator model")
+    battle = Battle("battle-gen9randombattle-9", "tester", logging.getLogger("t"), gen=9)
+    battle.player_role = "p1"
+    battle.parse_request(REQUEST)
+    battle.parse_message(["", "switch", "p1a: Rhydon", "Rhydon, L85, M", "300/300"])
+    battle.parse_message(["", "switch", "p2a: Charizard", "Charizard, L84, M", "100/100"])
+    policy = SearchLivePolicy(model, n_samples=2, time_ms=30)
+    decision = policy.choose(battle)
+    assert decision.source == "search"
+    assert order_is_valid(decision.order, battle)

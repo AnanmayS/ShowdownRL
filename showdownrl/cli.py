@@ -58,11 +58,14 @@ def build_parser() -> argparse.ArgumentParser:
     live.add_argument("--max-time", type=float, help="Stop after this many minutes of live play.")
     live.add_argument(
         "--policy",
-        choices=["heuristic", "ppo"],
-        default="heuristic",
-        help="heuristic: damage-calc heuristic; ppo: MaskablePPO model trained on battle_features "
-        "(falls back to the heuristic if no compatible model loads).",
+        choices=["heuristic", "ppo", "search"],
+        default="search",
+        help="heuristic: damage-calc heuristic; ppo: MaskablePPO model trained on battle_features; "
+        "search: poke-engine MCTS over sampled opponent sets with the PPO model as fallback "
+        "(each falls back to the next simpler policy if it cannot load).",
     )
+    live.add_argument("--search-samples", type=int, default=4, help="Opponent-set samples per search decision.")
+    live.add_argument("--search-time-ms", type=int, default=100, help="MCTS time per sample in milliseconds.")
     live.add_argument(
         "--model-path",
         type=Path,
@@ -168,6 +171,8 @@ def options_from_args(args: argparse.Namespace, *, check_ui_only: bool = False) 
         max_time_minutes=getattr(args, "max_time", None),
         policy=getattr(args, "policy", "heuristic"),
         model_path=getattr(args, "model_path", None),
+        search_samples=getattr(args, "search_samples", 4),
+        search_time_ms=getattr(args, "search_time_ms", 100),
         stats_enabled=not getattr(args, "no_stats", False),
         stats_dir=getattr(args, "stats_dir", None),
         debug_policy=getattr(args, "debug_policy", False),

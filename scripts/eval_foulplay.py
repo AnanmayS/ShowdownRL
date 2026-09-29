@@ -234,8 +234,17 @@ def evaluate(args: argparse.Namespace) -> dict:
     log_path = Path(args.fp_log) if args.fp_log else \
         Path("results") / "foulplay_logs" / f"{fp_name}.log"
 
+    entry, extra_env = None, None
+    if args.search_backend == "thread":
+        if args.search_parallelism != 1:
+            raise SystemExit("--search-backend thread needs --search-parallelism 1")
+        # Same search, run in a worker thread instead of a per-decision process pool
+        # (the pool occasionally hangs on a loaded machine); see foulplay_logged_run.py.
+        entry = Path(__file__).resolve().parent / "foulplay_logged_run.py"
+        extra_env = {"FP_THREAD_SEARCH": "1"}
     fp = FoulPlayProcess(fp_dir, python, fp_name, args.port, args.search_time_ms,
-                         args.search_parallelism, args.n, log_path)
+                         args.search_parallelism, args.n, log_path,
+                         entry=entry, extra_env=extra_env)
 
     def _sig(signum, frame):  # make SIGTERM/SIGINT run the cleanup path
         raise KeyboardInterrupt
@@ -328,6 +337,9 @@ def main() -> None:
     parser.add_argument("--search-time-ms", type=int, default=100)
     parser.add_argument("--search-parallelism", type=int, default=1,
                         help="Foul Play worker processes per decision (CPU cores used)")
+    parser.add_argument("--search-backend", choices=("process", "thread"), default="process",
+                        help="Foul Play's MCTS in its per-decision process pool (default) or in "
+                             "a worker thread (only with --search-parallelism 1)")
     parser.add_argument("--accept-timeout", type=float, default=20.0,
                         help="seconds to wait for Foul Play to accept a challenge before retrying")
     parser.add_argument("--battle-timeout", type=float, default=900.0)

@@ -266,6 +266,8 @@ class LiveOptions:
     max_time_minutes: float | None = None
     policy: str = "heuristic"
     model_path: Path | None = None
+    search_samples: int = 4
+    search_time_ms: int = 100
     stats_enabled: bool = True
     stats_dir: Path | None = None
     debug_policy: bool = False
@@ -894,7 +896,22 @@ async def run_live(options: LiveOptions) -> int:
         except ImportError as exc:
             print(f"Live play needs poke-env: pip install -e '.[rl]' ({exc})", flush=True)
             return 2
-    if options.policy == "ppo":
+    if options.policy == "search":
+        from showdownrl.policy_bridge import LivePolicy, PolicyLoadError, SearchLivePolicy
+
+        try:
+            policy = SearchLivePolicy(options.model_path, n_samples=options.search_samples,
+                                      time_ms=options.search_time_ms)
+            print(f"  Search: {options.search_samples} samples x {options.search_time_ms} ms, "
+                  f"fallback model {policy.model_path}", flush=True)
+        except PolicyLoadError as exc:
+            print(f"  Search unavailable ({exc}); trying the PPO model.", flush=True)
+            try:
+                policy = LivePolicy(options.model_path)
+                print(f"  Loaded PPO model: {policy.model_path}", flush=True)
+            except PolicyLoadError as exc2:
+                print(f"  PPO unavailable; using the smart damage-calc heuristic. {exc2}", flush=True)
+    elif options.policy == "ppo":
         from showdownrl.policy_bridge import LivePolicy, PolicyLoadError
 
         try:

@@ -97,7 +97,7 @@ class Decision:
     """One live decision: the poke-env order plus where it came from."""
 
     order: Any  # poke_env BattleOrder
-    source: str  # "ppo", "smart" or "random"
+    source: str  # "search", "ppo", "smart" or "random"
     fallback_reason: str = ""
     action: Optional[int] = None
 
@@ -154,6 +154,37 @@ class LivePolicy:
         except Exception:  # noqa: BLE001 - action index is informational only
             pass
         return Decision(order=order, source="ppo", action=action)
+
+
+class SearchLivePolicy(LivePolicy):
+    """poke-engine MCTS over sampled opponent sets, with the PPO policy as prior/fallback."""
+
+    def __init__(self, model_path: Path | None = None, n_samples: int = 4, time_ms: int = 100,
+                 prior_weight: float = 0.0):
+        from showdownrl.search import ENGINE_AVAILABLE, SearchStats, engine_is_gen9
+
+        if not ENGINE_AVAILABLE or not engine_is_gen9():
+            raise PolicyLoadError(
+                "search needs poke-engine built for gen9: pip install -e '.[search]' (see pyproject.toml)")
+        super().__init__(model_path)
+        self.n_samples = n_samples
+        self.time_ms = time_ms
+        self.prior_weight = prior_weight
+        self.stats = SearchStats()
+
+    def choose(self, battle: Any) -> Decision:
+        from poke_env.environment import SinglesEnv
+
+        from showdownrl.search import search_policy
+
+        order = search_policy(battle, self.model, n_samples=self.n_samples, time_ms=self.time_ms,
+                              prior_weight=self.prior_weight, stats=self.stats)
+        action = None
+        try:
+            action = int(SinglesEnv.order_to_action(order, battle, strict=False))
+        except Exception:  # noqa: BLE001 - action index is informational only
+            pass
+        return Decision(order=order, source="search", action=action)
 
 
 def order_is_valid(order: Any, battle: Any) -> bool:

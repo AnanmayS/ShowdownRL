@@ -304,3 +304,17 @@ def test_search_player_inline(battle):
     order = player.choose_move(battle)
     assert str(order) in {str(o) for o in battle.valid_orders}
     assert player.stats.searched == 1 and player.stats.fallbacks == 0
+
+
+def test_run_searches_raises_timeout_when_engine_hangs(monkeypatch):
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+
+    import showdownrl.search as search
+
+    monkeypatch.setattr(search, "mcts_worker", lambda *a, **k: time.sleep(2))
+    monkeypatch.setattr(search, "search_timeout_s", lambda cfg: 0.1)
+    cfg = search.SearchConfig(1, 10, 0.0, "sample", 0)
+    with ThreadPoolExecutor(1) as pool:
+        with pytest.raises(TimeoutError):
+            search.run_searches(pool, ["state"], cfg)

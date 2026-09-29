@@ -491,6 +491,8 @@ def _our_mon_spec(mon: Pokemon, battle: Battle, name: str, active: bool,
             moves.append(("none", 0, True))
             continue
         disabled = bool(restrict and move.id not in avail)
+        if restrict and not disabled:
+            pp = max(1, pp)  # the request says it is usable (PP tracking can drift)
         moves.append((mid, pp, disabled))
     return MonSpec(
         species=name, level=level, types=_type_pair(mon.base_types),
@@ -894,6 +896,8 @@ def _decide(battle: Battle, model: Any, cfg: SearchConfig, mask: np.ndarray, res
     action = combine_scores(shares, probs, mask, cfg.prior_weight)
     if action is None:
         stats.fallbacks += 1
+        seen = sorted({c for r in results for c, _, _ in r[0]})
+        stats.last_error = f"no legal search signal; engine options {seen[:8]}"
         return fallback_order(battle, model, mask, probs)
     return action_order(action, battle)
 

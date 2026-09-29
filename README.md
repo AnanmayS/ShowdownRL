@@ -14,9 +14,11 @@ visible browser so you can follow every decision.
 Decisions are made from the raw battle protocol the web client receives, not
 from scraped page text: ShowdownRL records the battle room's messages, rebuilds
 the battle with poke-env's own parser, and feeds the same features used in
-training (`showdownrl/battle_features.py`) to the policy. The policy is either a
-damage-calc heuristic or a MaskablePPO model trained on the real simulator, and
-it can pick any legal action: moves, voluntary switches, and Terastallization.
+training (`showdownrl/battle_features.py`) to the policy. By default the policy is
+a search agent. It runs poke-engine MCTS over sampled guesses of the opponent's
+hidden sets and falls back to a MaskablePPO model trained on the real simulator,
+then to a damage-calc heuristic. It can pick any legal action: moves, voluntary
+switches, and Terastallization.
 It can also save WebM recordings, write local battle stats, and
 generate local reports for comparing runs over time. Credentials, battle logs,
 debug snapshots, recordings, and stats stay on your machine unless you choose to
@@ -38,7 +40,15 @@ the training pipeline.
 | --- | ---: | ---: | ---: |
 | Smart heuristic (`showdownrl/smart_heuristic.py`) | 61.9% (2,000 battles) | 50% (itself) | 2/50 |
 | BC from the smart heuristic (`bc_smart`) | 61.8% (58.7-64.8) | 49.8% (46.7-52.9) | - |
-| BC distilled from Foul Play (`bc_fp_r2`) | **71.3% (68.4-74.0)** | **62.4% (59.4-65.3)** | 3/40 |
+| BC distilled from Foul Play (`bc_fp_r2`) | 71.3% (68.4-74.0) | 62.4% (59.4-65.3) | 3/40 (7.5%) |
+| **Search** (`--policy search`: poke-engine MCTS, 4 sampled opponent sets, `bc_fp_r2` fallback) | **91.7% (88.0-94.3)**, 300 battles | **85.0% (80.5-88.6)**, 300 battles | **29/58 (50.0%, 37.5-62.5)** |
+
+Search runs MCTS on [poke-engine](https://github.com/pmariglia/poke-engine)
+over several sampled guesses of the opponent's hidden sets, drawn from the
+Gen 9 Random Battle set data. The benchmark used 50 ms per sample against the
+heuristics and 100 ms per sample against Foul Play. At that budget it plays
+evenly with Foul Play, the strongest open-source Random Battle bot. Every
+plain-network policy we trained loses to Foul Play more than 90% of the time.
 
 The models trained in the older simplified environment (`maskable_ppo_v11` and
 later) use a different observation. They cannot play real battles, and their
@@ -127,8 +137,12 @@ showdownrl live --max-battles 50 --max-time 30
 # Save a redacted state snapshot for every decision
 showdownrl live --debug-policy
 
-# Use the newest real-simulator model in models/real/, falling back to the
-# damage-calc heuristic if none loads
+# Default: MCTS search (needs the `search` extra: pip install -e ".[search]").
+# More samples / time per sample play stronger but slower.
+showdownrl live --policy search --search-samples 4 --search-time-ms 100
+
+# Use the newest real-simulator model in models/real/ without search, falling
+# back to the damage-calc heuristic if none loads
 showdownrl live --policy ppo
 
 # Use a specific MaskablePPO checkpoint trained on battle_features

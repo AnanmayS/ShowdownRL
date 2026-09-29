@@ -1,0 +1,31 @@
+{
+  "git_sha": "14943e1",
+  "format": "gen9randombattle",
+  "obs_size": 273,
+  "n_actions": 26,
+  "created": "2026-09-28 21:39:33",
+  "args": {
+    "cmd": "bc",
+    "seed": 0,
+    "arch": "512,256",
+    "lr": 0.0001,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "clip": 0.2,
+    "ent_coef": 0.005,
+    "n_steps": 2048,
+    "batch_size": 1024,
+    "n_epochs": 4,
+    "data": "models/real/foulplay_teacher.npz,models/real/foulplay_teacher_r2_8000.npz,models/real/foulplay_teacher_r2_8001.npz",
+    "out": "models/real/bc_fp_r2.zip",
+    "bc_epochs": 25,
+    "bc_lr": 0.0005,
+    "bc_batch": 512,
+    "bc_value_coef": 0.5,
+    "init": "models/real/bc_smart.zip",
+    "weight_decay": 0.0001
+  },
+  "stage": "bc",
+  "val_acc": 0.49749898607543597,
+  "samples": 147957
+}

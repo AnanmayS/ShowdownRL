@@ -164,7 +164,7 @@ class FoulPlayProcess:
 # Agent
 
 
-def make_agent(spec: str, port: int, deterministic: bool) -> Player:
+def make_agent(spec: str, port: int, deterministic: bool, search_workers: int = 2) -> Player:
     kwargs = dict(
         battle_format=BATTLE_FORMAT,
         server_configuration=server_configuration(port),
@@ -175,6 +175,10 @@ def make_agent(spec: str, port: int, deterministic: bool) -> Player:
     )
     if spec in SCRIPTED:
         return SCRIPTED[spec](**kwargs)
+    if spec.startswith("search"):
+        from showdownrl.search import SearchPlayer, parse_search_spec
+
+        return SearchPlayer(**{"workers": search_workers, **parse_search_spec(spec)}, **kwargs)
     from sb3_contrib import MaskablePPO
 
     from showdownrl.battle_features import N_ACTIONS, OBS_SIZE
@@ -240,7 +244,7 @@ def evaluate(args: argparse.Namespace) -> dict:
     agent = None
     durations: list[float] = []
     try:
-        agent = make_agent(args.agent, args.port, not args.stochastic)
+        agent = make_agent(args.agent, args.port, not args.stochastic, args.agent_search_workers)
         deadline = time.time() + 30
         while not agent.ps_client.logged_in.is_set():
             if time.time() > deadline:
@@ -295,6 +299,11 @@ def evaluate(args: argparse.Namespace) -> dict:
         "seconds_per_battle": round(elapsed / max(len(durations), 1), 2),
         "foulplay_log": str(log_path),
     }
+    if agent is not None and hasattr(agent, "stats") and hasattr(agent, "decision_seconds"):
+        secs = agent.decision_seconds
+        result["search"] = {**agent.stats.as_dict(),
+                            "seconds_per_decision": round(sum(secs) / max(len(secs), 1), 4)}
+        agent.close_executor()
     print(f"{args.agent} vs FoulPlay({args.search_time_ms}ms): {wins}/{finished} = "
           f"{result['win_rate']:.3f} (95% CI {lo:.3f}-{hi:.3f}), "
           f"KOs dealt/taken {result['avg_foulplay_mons_fainted']}/"
@@ -306,7 +315,11 @@ def evaluate(args: argparse.Namespace) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--agent", required=True, help="scripted name or MaskablePPO .zip path")
+    parser.add_argument("--agent", required=True,
+                        help="scripted name, MaskablePPO .zip path or search spec "
+                             "(search[:MODEL.zip][,samples=N][,time_ms=T][,prior=L]; see eval_real.py)")
+    parser.add_argument("--agent-search-workers", type=int, default=2,
+                        help="engine worker processes for a search agent (0 = inline)")
     parser.add_argument("--n", type=int, default=50, help="number of battles")
     parser.add_argument("--port", type=int, default=8000, help="local Showdown server port")
     parser.add_argument("--foulplay-dir", default=os.environ.get("FOULPLAY_DIR", "~/foul-play"))

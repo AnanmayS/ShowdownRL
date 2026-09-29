@@ -77,10 +77,12 @@ def default_model_path() -> Path:
 
 
 def default_live_model_path() -> Optional[Path]:
-    """Newest real-simulator model (``models/real/*.zip``), if any exists."""
+    """``models/real/best.zip`` if present, else the newest ``models/real/*.zip``."""
     seen: list[Path] = []
     for directory in {path.parent for path in model_search_paths(REAL_MODEL_DIRNAME)}:
         real_dir = directory / REAL_MODEL_DIRNAME
+        if (real_dir / "best.zip").is_file():
+            return real_dir / "best.zip"
         if real_dir.is_dir():
             seen.extend(real_dir.glob("*.zip"))
     if not seen:

@@ -28,35 +28,22 @@ share them.
 
 ## Current AI Benchmark
 
-The default trained bench-simulator policy is
-`maskable_ppo_v11_conservative_3M.zip`. It trains MaskablePPO with a 7-action
-space: 4 move actions plus up to 3 bench-switch actions. The 106-feature rich
-observation includes active HP, per-move damage context, support-move flags, and
-bench Pokemon HP/type context.
+All numbers below come from the **real Pokemon Showdown simulator**: a local
+server running Gen 9 Random Battles, driven through poke-env. They are not from a
+simplified environment. Each row is 1,000 battles, and ranges are Wilson 95%
+confidence intervals. See [docs/real_simulator.md](docs/real_simulator.md) for
+the training pipeline.
 
-![Policy comparison chart](docs/assets/ai_policy_comparison.png)
+| Agent | vs poke-env SimpleHeuristics | vs ShowdownRL smart heuristic | vs Foul Play (100 ms search) |
+| --- | ---: | ---: | ---: |
+| Smart heuristic (`showdownrl/smart_heuristic.py`) | 61.9% (2,000 battles) | 50% (itself) | 2/50 |
+| BC from the smart heuristic (`bc_smart`) | 61.8% (58.7-64.8) | 49.8% (46.7-52.9) | - |
+| BC distilled from Foul Play (`bc_fp_r2`) | **71.3% (68.4-74.0)** | **62.4% (59.4-65.3)** | 3/40 |
 
-This chart and table are generated from the published benchmark data in
-[docs/benchmarks/current_evaluation.csv](docs/benchmarks/current_evaluation.csv).
-Each seed runs 1,000 simulator episodes against the `type_aware` opponent.
-The benchmark uses the bench simulator where both sides can switch between
-active and benched Pokemon.
-
-| Scenario | Policy | Episodes | Record (W-D-L) | Win rate | Avg reward | Avg turns |
-| --- | --- | ---: | ---: | ---: | ---: | ---: |
-| Rich/type-aware seed 42 | Maskable PPO v11 | 1000 | 790-41-169 | 79.0% | +2.211 | 22.93 |
-| Rich/type-aware seed 42 | Type aware | 1000 | 752-26-222 | 75.2% | +1.905 | 22.10 |
-| Rich/type-aware seed 42 | Max damage | 1000 | 542-29-429 | 54.2% | +0.569 | 24.37 |
-| Rich/type-aware seed 42 | Random | 1000 | 319-137-544 | 31.9% | -1.822 | 31.64 |
-| Rich/type-aware seed 99 | Maskable PPO v11 | 1000 | 788-40-172 | 78.8% | +2.205 | 22.83 |
-| Rich/type-aware seed 99 | Type aware | 1000 | 753-25-222 | 75.3% | +1.900 | 22.00 |
-| Rich/type-aware seed 99 | Max damage | 1000 | 545-27-428 | 54.5% | +0.577 | 24.25 |
-| Rich/type-aware seed 99 | Random | 1000 | 323-155-522 | 32.3% | -1.806 | 31.99 |
-
-Records are shown as wins-draws-losses. See
-[docs/benchmarks/current_evaluation.csv](docs/benchmarks/current_evaluation.csv)
-and [docs/model_leaderboard.md](docs/model_leaderboard.md) for the side-by-side
-benchmark data.
+The models trained in the older simplified environment (`maskable_ppo_v11` and
+later) use a different observation. They cannot play real battles, and their
+simplified-env scores do not transfer. See
+[docs/model_leaderboard.md](docs/model_leaderboard.md) for that history.
 
 ## Install
 

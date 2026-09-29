@@ -199,7 +199,9 @@ def build_model(env, args, **overrides):
 def _bc(args) -> None:
     import torch as th
 
-    data = np.load(args.data)
+    parts = [np.load(path) for path in args.data.split(",")]
+    data = {k: np.concatenate([p[k] for p in parts]) for k in
+            ("obs", "masks", "actions", "outcomes", "steps_left")}
     obs = th.tensor(data["obs"], dtype=th.float32)
     masks = th.tensor(data["masks"], dtype=th.bool)
     actions = th.tensor(data["actions"], dtype=th.long)
@@ -212,7 +214,11 @@ def _bc(args) -> None:
     args.n_steps, args.batch_size, args.n_epochs = 2048, 1024, 4
     model = build_model(_SpaceEnv().env, args)
     policy = model.policy
-    optim = th.optim.Adam(policy.parameters(), lr=args.bc_lr)
+    if args.init:
+        from sb3_contrib import MaskablePPO
+
+        policy.load_state_dict(MaskablePPO.load(args.init, device="cpu").policy.state_dict())
+    optim = th.optim.AdamW(policy.parameters(), lr=args.bc_lr, weight_decay=args.weight_decay)
 
     def run(idx, train: bool):
         policy.train(train)
@@ -234,12 +240,21 @@ def _bc(args) -> None:
                 total_loss += loss.item() * len(b)
         return total_loss / len(idx), correct / len(idx)
 
+    import copy
+
+    best_state, best_val, best_acc = None, float("inf"), 0.0
     for epoch in range(args.bc_epochs):
         shuffled = train_idx[th.randperm(len(train_idx))]
         tl, ta = run(shuffled, True)
         vl, va = run(val_idx, False)
         print(f"epoch {epoch + 1}: train loss {tl:.3f} acc {ta:.3f} | val loss {vl:.3f} acc {va:.3f}",
               flush=True)
+        if vl < best_val:
+            best_val, best_acc = vl, va
+            best_state = copy.deepcopy(policy.state_dict())
+    policy.load_state_dict(best_state)
+    va = best_acc
+    print(f"best val loss {best_val:.3f} acc {best_acc:.3f}")
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     model.save(str(out))
@@ -409,6 +424,8 @@ def main() -> None:
     b.add_argument("--bc-lr", type=float, default=1e-3)
     b.add_argument("--bc-batch", type=int, default=512)
     b.add_argument("--bc-value-coef", type=float, default=0.5)
+    b.add_argument("--init", default=None, help="warm-start from this .zip")
+    b.add_argument("--weight-decay", type=float, default=1e-4)
 
     p = sub.add_parser("ppo")
     common(p)

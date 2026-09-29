@@ -272,6 +272,7 @@ class LiveOptions:
     stats_dir: Path | None = None
     debug_policy: bool = False
     slow_mo_ms: int = 250
+    headless: bool = False
     click_delay: float = 0.75
     viewport_width: int = 1280
     viewport_height: int = 800
@@ -885,7 +886,10 @@ async def run_live(options: LiveOptions) -> int:
     account_label = "not needed for UI check" if options.check_ui_only else f"{options.username}{' (guest)' if options.guest else ''}"
     print(f"  Account: {account_label}", flush=True)
     print(f"  Policy: {options.policy}", flush=True)
-    print("  A visible browser will open. Watch the AI pointer markers.", flush=True)
+    if options.headless:
+        print("  Running headless (no browser window).", flush=True)
+    else:
+        print("  A visible browser will open. Watch the AI pointer markers.", flush=True)
     print("=" * 58, flush=True)
 
     try:
@@ -933,7 +937,7 @@ async def run_live(options: LiveOptions) -> int:
     try:
         async with async_playwright() as playwright:
             browser = await playwright.chromium.launch(
-                headless=False,
+                headless=options.headless,
                 slow_mo=options.slow_mo_ms,
                 args=["--no-sandbox"],
             )

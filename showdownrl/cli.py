@@ -103,6 +103,11 @@ def add_common_live_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--guest", action="store_true", help="Use guest mode for this run.")
     parser.add_argument("--site", help="Pokemon Showdown URL.")
     parser.add_argument("--login-only", action="store_true", help="Stop before queueing a battle.")
+    parser.add_argument(
+        "--headless",
+        action="store_true",
+        help="Run the browser without a window (for background ladder runs; use --record to review games).",
+    )
 
 
 def install_chromium() -> int:
@@ -176,7 +181,8 @@ def options_from_args(args: argparse.Namespace, *, check_ui_only: bool = False) 
         stats_enabled=not getattr(args, "no_stats", False),
         stats_dir=getattr(args, "stats_dir", None),
         debug_policy=getattr(args, "debug_policy", False),
-        slow_mo_ms=getattr(args, "slow_mo_ms", 250),
+        slow_mo_ms=0 if getattr(args, "headless", False) else getattr(args, "slow_mo_ms", 250),
+        headless=getattr(args, "headless", False),
         click_delay=getattr(args, "click_delay", 0.75),
         viewport_width=getattr(args, "viewport_width", 1280),
         viewport_height=getattr(args, "viewport_height", 800),

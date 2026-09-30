@@ -28,6 +28,22 @@ if TYPE_CHECKING:  # heavy imports (poke-env, torch) stay lazy for non-live comm
 CONNECTED = "() => document.querySelector('button[name=openSounds], .userbar') !== null"
 IN_BATTLE = "() => document.querySelector('.battle') !== null"
 
+# Send a chat command (e.g. "/timer on") to a battle room through the client.
+SEND_ROOM_COMMAND = """
+({room, text}) => {
+  try {
+    if (window.app && typeof window.app.send === 'function') { window.app.send(text, room); return 'app'; }
+    const ps = window.PS || (typeof PS !== 'undefined' ? PS : null);
+    if (ps && typeof ps.send === 'function') { ps.send(text, room); return 'PS'; }
+  } catch (e) { return 'error: ' + e; }
+  return 'none';
+}
+"""
+
+# Opponents who stop moving are only forced to act by the battle timer.
+STALL_WARN_SECONDS = 240
+STALL_ABANDON_SECONDS = 20 * 60
+
 CLICK_MARKER = """
 () => {
     if (document.getElementById('showdownrl-click-style')) return;
@@ -536,6 +552,13 @@ class BrowserProtocol:
         self.tracker.mark_answered(state)
 
 
+async def send_room_command(page: Any, room: str, text: str) -> str:
+    try:
+        return await page.evaluate(SEND_ROOM_COMMAND, {"room": room, "text": text})
+    except Exception as exc:  # noqa: BLE001 - best effort; never stop the battle loop
+        return f"error: {exc}"
+
+
 async def controls_ready(page: Any) -> bool:
     try:
         controls = await page.evaluate(CONTROLS)
@@ -786,6 +809,10 @@ async def play_battle(
     decisions = 0
     attempts: dict[tuple[str, int], int] = {}
     reported_errors = 0
+    timer_rooms: set[str] = set()
+    progress_key: Any = None
+    last_progress = loop.time()
+    last_warn = last_progress
     while decisions < options.max_turns:
         if deadline is not None and loop.time() >= deadline:
             record["errors"].append(f"stopped after max time {options.max_time_minutes:g} minutes")
@@ -799,6 +826,27 @@ async def play_battle(
             for error in state.parse_errors[reported_errors:]:
                 print(f"  Protocol parse warning: {error}", flush=True)
             reported_errors = len(state.parse_errors)
+
+        if state is not None and not state.finished:
+            if state.battle_tag and state.battle_tag not in timer_rooms:
+                timer_rooms.add(state.battle_tag)
+                via = await send_room_command(page, state.battle_tag, "/timer on")
+                print(f"  Battle timer on ({via}).", flush=True)
+            key = (state.battle_tag, state.request_seq, state.battle.turn)
+            now = loop.time()
+            if key != progress_key:
+                progress_key, last_progress, last_warn = key, now, now
+            elif now - last_progress >= STALL_ABANDON_SECONDS:
+                print(f"\n  No progress for {STALL_ABANDON_SECONDS // 60} minutes; leaving this battle.", flush=True)
+                record["errors"].append(f"stalled at turn {state.battle.turn}")
+                return None, False
+            elif now - last_warn >= STALL_WARN_SECONDS:
+                last_warn = now
+                waiting = "our move" if state.needs_decision else "the opponent"
+                ready = await controls_ready(page)
+                print(f"  No progress for {int(now - last_progress)}s at turn {state.battle.turn} "
+                      f"(waiting on {waiting}; controls ready: {ready}); re-sending /timer on.", flush=True)
+                await send_room_command(page, state.battle_tag, "/timer on")
 
         if state is not None and state.finished:
             battle = state.battle

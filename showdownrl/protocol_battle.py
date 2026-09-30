@@ -304,6 +304,10 @@ class BattleRoomTracker:
             if not roomid.startswith("battle-"):
                 continue
             state = self.rooms.get(roomid)
+            if state is not None and "\n|init|battle" in message:
+                # Rejoining a room (e.g. after a reconnect) replays its whole log:
+                # start from a fresh battle instead of applying it twice.
+                state = None
             if state is None:
                 state = self.rooms[roomid] = ProtocolBattle(battle_tag=roomid, username=self.username)
             state.feed(message)

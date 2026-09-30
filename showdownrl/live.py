@@ -14,6 +14,7 @@ from __future__ import annotations
 import asyncio
 import re
 import shutil
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -39,6 +40,18 @@ SEND_ROOM_COMMAND = """
   return 'none';
 }
 """
+
+# SockJS readyState of the client's connection (1 = open), or -1 if unknown.
+CONNECTION_STATE = "() => (window.app && window.app.socket) ? window.app.socket.readyState : -1"
+REJOIN_ROOM = """
+(room) => {
+  if (!window.app) return 'no app';
+  if (app.rooms && app.rooms[room]) return 'already joined';
+  app.joinRoom(room);
+  return 'joined';
+}
+"""
+CONNECTION_CHECK_SECONDS = 10
 
 # Opponents who stop moving are only forced to act by the battle timer.
 STALL_WARN_SECONDS = 240
@@ -552,6 +565,41 @@ class BrowserProtocol:
         self.tracker.mark_answered(state)
 
 
+async def connection_lost(page: Any) -> bool:
+    try:
+        return int(await page.evaluate(CONNECTION_STATE)) in (2, 3)  # SockJS CLOSING / CLOSED
+    except Exception:  # noqa: BLE001 - an unreadable page is handled by the stall watchdog
+        return False
+
+
+async def reconnect_to_battle(page: Any, options: "LiveOptions", room: str) -> None:
+    """Reload the client, log back in and rejoin ``room`` (Showdown replays its log)."""
+    try:
+        await page.goto(options.site, wait_until="domcontentloaded", timeout=45_000)
+        await page.evaluate(CLICK_MARKER)
+        await asyncio.sleep(3)
+        status = await login(page, options.username, options.password, options.guest, options.click_delay)
+        print(f"  Login status after reconnect: {status}", flush=True)
+        if room:
+            await asyncio.sleep(2)
+            print(f"  Rejoin {room}: {await page.evaluate(REJOIN_ROOM, room)}", flush=True)
+    except Exception as exc:  # noqa: BLE001 - keep the battle loop alive; the watchdog retries
+        print(f"  Reconnect failed: {exc}", flush=True)
+
+
+async def save_stall_screenshot(page: Any, options: "LiveOptions", room: str, turn: int) -> None:
+    from showdownrl.config import default_stats_dir
+
+    try:
+        directory = (options.stats_dir or default_stats_dir()) / "stalls"
+        directory.mkdir(parents=True, exist_ok=True)
+        path = directory / f"{room or 'battle'}-turn{turn}-{int(time.time())}.png"
+        await page.screenshot(path=str(path))
+        print(f"  Stall screenshot: {path}", flush=True)
+    except Exception as exc:  # noqa: BLE001 - diagnostics only
+        print(f"  Could not save stall screenshot: {exc}", flush=True)
+
+
 async def send_room_command(page: Any, room: str, text: str) -> str:
     try:
         return await page.evaluate(SEND_ROOM_COMMAND, {"room": room, "text": text})
@@ -813,7 +861,18 @@ async def play_battle(
     progress_key: Any = None
     last_progress = loop.time()
     last_warn = last_progress
+    last_conn_check = last_progress
+    current_room = ""
     while decisions < options.max_turns:
+        if loop.time() - last_conn_check >= CONNECTION_CHECK_SECONDS:
+            last_conn_check = loop.time()
+            if await connection_lost(page):
+                print("  Connection to Showdown lost; reloading and rejoining the battle.", flush=True)
+                record["errors"].append("connection lost; reconnected")
+                await reconnect_to_battle(page, options, current_room)
+                attempts.clear()
+                timer_rooms.discard(current_room)
+                continue
         if deadline is not None and loop.time() >= deadline:
             record["errors"].append(f"stopped after max time {options.max_time_minutes:g} minutes")
             print(f"\n  Stopped after --max-time={options.max_time_minutes:g} minutes.", flush=True)
@@ -828,6 +887,7 @@ async def play_battle(
             reported_errors = len(state.parse_errors)
 
         if state is not None and not state.finished:
+            current_room = state.battle_tag or current_room
             if state.battle_tag and state.battle_tag not in timer_rooms:
                 timer_rooms.add(state.battle_tag)
                 via = await send_room_command(page, state.battle_tag, "/timer on")
@@ -844,8 +904,11 @@ async def play_battle(
                 last_warn = now
                 waiting = "our move" if state.needs_decision else "the opponent"
                 ready = await controls_ready(page)
+                conn = await page.evaluate(CONNECTION_STATE)
                 print(f"  No progress for {int(now - last_progress)}s at turn {state.battle.turn} "
-                      f"(waiting on {waiting}; controls ready: {ready}); re-sending /timer on.", flush=True)
+                      f"(waiting on {waiting}; controls ready: {ready}; connection state {conn}); "
+                      "re-sending /timer on.", flush=True)
+                await save_stall_screenshot(page, options, state.battle_tag, state.battle.turn)
                 await send_room_command(page, state.battle_tag, "/timer on")
 
         if state is not None and state.finished:

@@ -335,3 +335,17 @@ class LiveDecisionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_rejoin_replay_resets_room_instead_of_double_applying():
+    from showdownrl.protocol_battle import BattleRoomTracker
+
+    tracker = BattleRoomTracker("tester")
+    room = "battle-gen9randombattle-42"
+    first = f">{room}\n|init|battle\n|title|x vs y\n"
+    tracker.ingest([first])
+    old_state = tracker.rooms[room]
+    tracker.ingest([f">{room}\n|t:|1\n"])
+    assert tracker.rooms[room] is old_state
+    tracker.ingest([first])  # reconnect: server replays the room from |init|
+    assert tracker.rooms[room] is not old_state

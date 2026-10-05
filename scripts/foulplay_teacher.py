@@ -20,7 +20,7 @@ Examples::
     # long run, incremental saves every 250 battles
     nohup python scripts/foulplay_teacher.py collect --battles 3000 --instances 3 \\
         --search-time-ms 75 --save-every 250 \\
-        --out /Users/ananmaysingh/ShowdownRL/models/real/foulplay_teacher.npz > fpt.log 2>&1 &
+        --out models/real/foulplay_teacher.npz > fpt.log 2>&1 &
 
     # (re)convert existing log dirs, merging into an existing npz
     python scripts/foulplay_teacher.py convert results/foulplay_teacher/logs_ab12 \\

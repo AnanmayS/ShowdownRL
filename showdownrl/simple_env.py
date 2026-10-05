@@ -17,12 +17,19 @@ State:
         (expected_damage, STAB, super-effective, resisted/immune,
         finish_flag, recovery_flag, setup_flag, status_flag)
     advanced observation: rich observation plus own/opponent status+item
+        (the opponent's item/ability stay hidden until revealed in battle)
+    rich_v2 observation: rich observation plus own/opponent types, attack
+        boosts and speeds (new size; older checkpoints use simple/rich)
 
 Actions: moves 0-3, switches 4+.
 
+Turn order: both sides choose simultaneously; switches resolve first, then
+the faster active Pokemon moves (random tie-break). Move effectiveness is
+recomputed whenever either active Pokemon changes.
+
 Reward:
-    + (opponent HP decrease) for hitting the opponent
-    - (own HP decrease) for taking damage
+    + (opponent team HP decrease) for hitting the opponent
+    - (own team HP decrease) for taking damage
     +1 for winning
     -1 for losing
 
@@ -45,6 +52,12 @@ SIMPLE_OBS_SIZE = BASE_SIMPLE_OBS_SIZE + DEFAULT_MAX_BENCH_SIZE * BENCH_FEATURES
 RICH_FEATURES_PER_MOVE = 8
 BASE_RICH_OBS_SIZE = BASE_SIMPLE_OBS_SIZE + MOVE_ACTIONS * RICH_FEATURES_PER_MOVE
 RICH_OBS_SIZE = BASE_RICH_OBS_SIZE + DEFAULT_MAX_BENCH_SIZE * BENCH_FEATURES_PER_POKEMON
+RICH_V2_OBS_EXTRA = 2 * len(POKEMON_TYPES) + 5
+OBSERVATION_MODES = ("simple", "rich", "rich_v2")
+RICH_OBSERVATION_MODES = ("rich", "rich_v2")
+# Bump whenever battle dynamics or observation layouts change so results and
+# checkpoints can be traced to the environment they came from.
+ENV_VERSION = 2
 ROLE_ATTACK = "attack"
 ROLE_RECOVER = "recover"
 ROLE_SETUP = "setup"
@@ -84,14 +97,19 @@ ABILITY_REGENERATOR = 2  # Heals 1/3 HP on switch-out
 ABILITY_NATURAL_CURE = 3 # Cures status on switch-out
 
 
+def _base_obs_size(mechanics: str, observation_mode: str) -> int:
+    """Return the observation size before the bench block."""
+    size = BASE_RICH_OBS_SIZE if observation_mode in RICH_OBSERVATION_MODES else BASE_SIMPLE_OBS_SIZE
+    if mechanics == "advanced":
+        size += ADVANCED_OBS_EXTRA
+    if observation_mode == "rich_v2":
+        size += RICH_V2_OBS_EXTRA
+    return size
+
+
 def _obs_size_for_mechanics(mechanics: str, observation_mode: str, max_bench_size: int) -> int:
     """Return the total observation size for a given mechanics/observation_mode combo."""
-    extra = ADVANCED_OBS_EXTRA if mechanics == "advanced" else 0
-    if observation_mode == "rich":
-        base = BASE_RICH_OBS_SIZE + extra
-    else:
-        base = BASE_SIMPLE_OBS_SIZE + extra
-    return base + max_bench_size * BENCH_FEATURES_PER_POKEMON
+    return _base_obs_size(mechanics, observation_mode) + max_bench_size * BENCH_FEATURES_PER_POKEMON
 
 
 def _parse_advanced_move(move: tuple) -> tuple:
@@ -104,6 +122,11 @@ def _parse_advanced_move(move: tuple) -> tuple:
         return bp, acc, multiplier, stab, effectiveness, role, status_type
     bp, acc, multiplier, stab, effectiveness, role = move[:6]
     return bp, acc, multiplier, stab, effectiveness, role, STATUS_NONE
+
+
+def _move_type(move: tuple) -> str | None:
+    """Return the move's type when the tuple carries it (8-tuple format)."""
+    return move[7] if len(move) >= 8 else None
 
 
 def _last_fields(move: tuple) -> tuple:
@@ -129,6 +152,8 @@ class SimplePokemonMoveEnv(gymnasium.Env):
         max_bench_size: int = DEFAULT_MAX_BENCH_SIZE,
     ):
         super().__init__()
+        if observation_mode not in OBSERVATION_MODES:
+            raise ValueError(f"observation_mode must be one of {OBSERVATION_MODES}")
 
         self.max_turns = max_turns
         self.opponent_policy = opponent_policy
@@ -154,6 +179,8 @@ class SimplePokemonMoveEnv(gymnasium.Env):
         self.opponent_types = []
         self.own_attack_boost = 1.0
         self.opponent_attack_boost = 1.0
+        self.own_speed = 0.5
+        self.opponent_speed = 0.5
         self.bench = []
         self.opponent_bench = []
         self.active_pokemon = None
@@ -209,9 +236,9 @@ class SimplePokemonMoveEnv(gymnasium.Env):
         """Sample a status condition or hazard for a status move."""
         if self.mechanics == "advanced":
             return int(self.rng.choice(
-                [STATUS_BURN, STATUS_POISON, STATUS_PARALYSIS,
+                [STATUS_BURN, STATUS_POISON, STATUS_PARALYSIS, STATUS_SLEEP,
                  HAZARD_STEALTH_ROCK, HAZARD_SPIKES, HAZARD_TOXIC_SPIKES],
-                p=[0.2, 0.2, 0.2, 0.2, 0.1, 0.1],
+                p=[0.15, 0.15, 0.15, 0.15, 0.2, 0.1, 0.1],
             ))
         return int(self.rng.choice([STATUS_BURN, STATUS_POISON, STATUS_PARALYSIS], p=[0.3, 0.3, 0.4]))
 
@@ -281,8 +308,18 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             if role != ROLE_ATTACK:
                 bp = 0.0
                 multiplier = 0.0
-            moves.append((bp, acc, multiplier, stab, effectiveness, role, status_type))
+            moves.append((bp, acc, multiplier, stab, effectiveness, role, status_type, move_type))
         return moves
+
+    def _retarget_move(self, move: tuple, defender_types: list[str]) -> tuple:
+        """Recompute a typed move's effectiveness against a new defender."""
+        move_type = _move_type(move)
+        if move_type is None:
+            return move
+        bp, acc, _, stab, _, role, status_type = _parse_advanced_move(move)
+        effectiveness = self._type_effectiveness(move_type, defender_types)
+        multiplier = stab * effectiveness if role == ROLE_ATTACK else 0.0
+        return (bp, acc, multiplier, stab, effectiveness, role, status_type, move_type)
 
     def _generate_moves(self):
         """Generate four moves for the agent-facing observation."""
@@ -313,6 +350,7 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             "types": types,
             "moves": self._generate_typed_moves(types, defender_types),
             "attack_boost": 1.0,
+            "speed": float(self.rng.uniform(0.2, 1.0)),
             "status": STATUS_NONE,
             "item": self._sample_item() if self.mechanics == "advanced" else ITEM_NONE,
             "sleep_turns": 0,
@@ -320,6 +358,8 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             "choice_action": -1,
             "sash_used": False,
             "ability": self._sample_ability() if self.mechanics == "advanced" else ABILITY_NONE,
+            "item_revealed": False,
+            "ability_revealed": False,
         }
 
     def _sync_active_aliases(self) -> None:
@@ -328,6 +368,7 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             self.moves = self.active_pokemon["moves"]
             self.own_types = self.active_pokemon["types"]
             self.own_attack_boost = self.active_pokemon["attack_boost"]
+            self.own_speed = self.active_pokemon.get("speed", 0.5)
             self.own_status = self.active_pokemon.get("status", STATUS_NONE)
             self.own_item = self.active_pokemon.get("item", ITEM_NONE)
             self.own_choice_locked = self.active_pokemon.get("choice_locked", False)
@@ -339,6 +380,7 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             self.opponent_moves = self.opponent_active["moves"]
             self.opponent_types = self.opponent_active["types"]
             self.opponent_attack_boost = self.opponent_active["attack_boost"]
+            self.opponent_speed = self.opponent_active.get("speed", 0.5)
             self.opponent_status = self.opponent_active.get("status", STATUS_NONE)
             self.opponent_item = self.opponent_active.get("item", ITEM_NONE)
             self.opponent_choice_locked = self.opponent_active.get("choice_locked", False)
@@ -352,6 +394,7 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             self.active_pokemon["moves"] = self.moves
             self.active_pokemon["types"] = self.own_types
             self.active_pokemon["attack_boost"] = self.own_attack_boost
+            self.active_pokemon["speed"] = self.own_speed
             self.active_pokemon["status"] = self.own_status
             self.active_pokemon["item"] = self.own_item
             self.active_pokemon["choice_locked"] = self.own_choice_locked
@@ -363,6 +406,7 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             self.opponent_active["moves"] = self.opponent_moves
             self.opponent_active["types"] = self.opponent_types
             self.opponent_active["attack_boost"] = self.opponent_attack_boost
+            self.opponent_active["speed"] = self.opponent_speed
             self.opponent_active["status"] = self.opponent_status
             self.opponent_active["item"] = self.opponent_item
             self.opponent_active["choice_locked"] = self.opponent_choice_locked
@@ -381,16 +425,167 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             active is not None and active["hp"] > 0
         ) or self._first_living_bench(bench) is not None
 
-    def _auto_switch_fainted(self) -> None:
-        if self.active_pokemon is not None and self.active_pokemon["hp"] <= 0:
-            replacement = self._first_living_bench(self.bench)
-            if replacement is not None:
-                self.active_pokemon = replacement
-        if self.opponent_active is not None and self.opponent_active["hp"] <= 0:
-            replacement = self._first_living_bench(self.opponent_bench)
-            if replacement is not None:
-                self.opponent_active = replacement
+    def _team_hp(self, *, is_own: bool) -> float:
+        """Total HP across one side's team (active + bench)."""
+        hp = self.own_hp if is_own else self.opponent_hp
+        bench = self.bench if is_own else self.opponent_bench
+        return hp + sum(pokemon["hp"] for pokemon in bench)
+
+    def _side_alive(self, *, is_own: bool) -> bool:
+        if self.max_bench_size == 0:
+            return (self.own_hp if is_own else self.opponent_hp) > 0
+        if is_own:
+            return self._team_has_living_pokemon(self.active_pokemon, self.bench)
+        return self._team_has_living_pokemon(self.opponent_active, self.opponent_bench)
+
+    def battle_result(self) -> str | None:
+        """Return "win"/"loss" from the agent's side once a team is out, else None.
+
+        If both teams run out on the same turn the agent is credited with the
+        win, matching the terminal reward.
+        """
+        if not self._side_alive(is_own=False):
+            return "win"
+        if not self._side_alive(is_own=True):
+            return "loss"
+        return None
+
+    def _refresh_matchups(self) -> None:
+        """Recompute every move's effectiveness against the current opposing active Pokemon."""
+        if self.active_pokemon is None or self.opponent_active is None:
+            return
+        for pokemon in [self.active_pokemon, *self.bench]:
+            pokemon["moves"] = [
+                self._retarget_move(move, self.opponent_active["types"]) for move in pokemon["moves"]
+            ]
+        for pokemon in [self.opponent_active, *self.opponent_bench]:
+            pokemon["moves"] = [
+                self._retarget_move(move, self.active_pokemon["types"]) for move in pokemon["moves"]
+            ]
         self._sync_active_aliases()
+
+    def _on_switch_out(self, outgoing: dict) -> None:
+        # Boosts and Choice lock never survive leaving the field.
+        outgoing["attack_boost"] = 1.0
+        outgoing["choice_locked"] = False
+        outgoing["choice_action"] = -1
+        if self.mechanics != "advanced" or outgoing["hp"] <= 0:
+            return
+        # On switch-out: Regenerator heals, Natural Cure cures
+        if outgoing.get("ability") == ABILITY_REGENERATOR:
+            outgoing["hp"] = min(1.0, outgoing["hp"] + (1.0 / 3.0))
+            self._reveal(outgoing, "ability")
+        if outgoing.get("ability") == ABILITY_NATURAL_CURE and outgoing.get("status", STATUS_NONE):
+            outgoing["status"] = STATUS_NONE
+            self._reveal(outgoing, "ability")
+
+    def _on_switch_in(self, *, is_own: bool) -> None:
+        """Apply entry hazards and Intimidate to the Pokemon that just came in."""
+        if self.mechanics != "advanced":
+            return
+        incoming = self.active_pokemon if is_own else self.opponent_active
+        incoming_types = self.own_types if is_own else self.opponent_types
+        damage = 0.0
+
+        # Stealth Rock: 1/8 max HP scaled by Rock effectiveness
+        if self.opp_stealth_rock if is_own else self.own_stealth_rock:
+            damage += 0.125 * self._type_effectiveness("rock", incoming_types)
+
+        # Spikes: fixed damage per layer
+        spikes = self.opp_spikes if is_own else self.own_spikes
+        if spikes:
+            damage += {1: 0.125, 2: 0.167, 3: 0.25}[spikes]
+
+        if is_own:
+            self.own_hp = max(0.0, self.own_hp - damage)
+        else:
+            self.opponent_hp = max(0.0, self.opponent_hp - damage)
+
+        # Toxic Spikes: poison on switch
+        if self.opp_toxic_spikes if is_own else self.own_toxic_spikes:
+            self._inflict_status(STATUS_POISON, target_is_own=is_own)
+
+        # Intimidate: lowers opponent's attack on switch-in
+        incoming_ability = self.own_ability if is_own else self.opponent_ability
+        if incoming_ability == ABILITY_INTIMIDATE:
+            self._reveal(incoming, "ability")
+            if is_own:
+                self.opponent_attack_boost = max(0.4, self.opponent_attack_boost - 0.3)
+            else:
+                self.own_attack_boost = max(0.4, self.own_attack_boost - 0.3)
+
+    def _switch_to(self, bench: list[dict], bench_index: int, *, is_own: bool) -> None:
+        """Swap one side's active Pokemon with bench[bench_index] and resolve switch effects."""
+        self._sync_active_pokemon()
+        replacement = bench[bench_index]
+        outgoing = self.active_pokemon if is_own else self.opponent_active
+        if outgoing is not None:
+            self._on_switch_out(outgoing)
+            bench[bench_index] = outgoing
+        if is_own:
+            self.active_pokemon = replacement
+        else:
+            self.opponent_active = replacement
+        self._sync_active_aliases()
+        self._refresh_matchups()
+        self._on_switch_in(is_own=is_own)
+        self._sync_active_pokemon()
+
+    def _auto_switch_fainted(self) -> None:
+        self._sync_active_pokemon()
+        for is_own in (True, False):
+            bench = self.bench if is_own else self.opponent_bench
+            # Loop: a replacement can itself faint to entry hazards.
+            while True:
+                active = self.active_pokemon if is_own else self.opponent_active
+                if active is None or active["hp"] > 0:
+                    break
+                replacement_index = next(
+                    (index for index, pokemon in enumerate(bench) if pokemon["hp"] > 0), None
+                )
+                if replacement_index is None:
+                    break
+                self._switch_to(bench, replacement_index, is_own=is_own)
+        self._sync_active_aliases()
+
+    def _effective_speed(self, *, is_own: bool) -> float:
+        speed = self.own_speed if is_own else self.opponent_speed
+        status = self.own_status if is_own else self.opponent_status
+        if self.mechanics == "advanced" and status == STATUS_PARALYSIS:
+            speed *= 0.5
+        return speed
+
+    def _turn_order(self, own_action: int, opponent_action: int) -> tuple[bool, bool]:
+        """Return the sides (is_own flags) in resolution order.
+
+        Switches resolve before moves; otherwise the faster Pokemon acts first,
+        with a coin flip on speed ties.
+        """
+        own_switch = own_action >= SWITCH_ACTION
+        opponent_switch = opponent_action >= SWITCH_ACTION
+        if own_switch != opponent_switch:
+            own_first = own_switch
+        else:
+            own_speed = self._effective_speed(is_own=True)
+            opponent_speed = self._effective_speed(is_own=False)
+            if own_speed == opponent_speed:
+                own_first = bool(self.rng.random() < 0.5)
+            else:
+                own_first = own_speed > opponent_speed
+        return (True, False) if own_first else (False, True)
+
+    @staticmethod
+    def _reveal(pokemon: dict | None, key: str) -> None:
+        """Mark a Pokemon's item/ability as seen by the other side."""
+        if pokemon is not None:
+            pokemon[f"{key}_revealed"] = True
+
+    @staticmethod
+    def _public_value(pokemon: dict | None, key: str) -> int:
+        """Return an item/ability only once it has been revealed in battle."""
+        if pokemon is None or not pokemon.get(f"{key}_revealed", False):
+            return 0
+        return int(pokemon.get(key, 0))
 
     # ------------------------------------------------------------------ #
     #  Observation
@@ -409,19 +604,22 @@ class SimplePokemonMoveEnv(gymnasium.Env):
         opponent_item: int = ITEM_NONE,
         own_ability: int = ABILITY_NONE,
         opponent_ability: int = ABILITY_NONE,
+        hazards: tuple = (0, 0, 0, 0, 0, 0),
+        own_types: list[str] = (),
+        opponent_types: list[str] = (),
+        own_attack_boost: float = 1.0,
+        opponent_attack_boost: float = 1.0,
+        own_speed: float = 0.0,
+        opponent_speed: float = 0.0,
     ):
-        """Build an observation vector from one side's perspective."""
+        """Build an observation vector from one side's perspective.
+
+        Callers must pass only information that side can see: the opposing
+        item/ability should be 0 until revealed.
+        """
         is_advanced = self.mechanics == "advanced"
-        if is_advanced:
-            base_size = (
-                BASE_RICH_OBS_SIZE + ADVANCED_OBS_EXTRA
-                if self.observation_mode == "rich"
-                else BASE_SIMPLE_OBS_SIZE + ADVANCED_OBS_EXTRA
-            )
-        else:
-            base_size = (
-                BASE_RICH_OBS_SIZE if self.observation_mode == "rich" else BASE_SIMPLE_OBS_SIZE
-            )
+        is_rich = self.observation_mode in RICH_OBSERVATION_MODES
+        base_size = _base_obs_size(self.mechanics, self.observation_mode)
         size = base_size + self.max_bench_size * BENCH_FEATURES_PER_POKEMON
         obs = np.zeros(size, dtype=np.float32)
         obs[0] = own_hp
@@ -432,7 +630,7 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             obs[base] = bp
             obs[base + 1] = acc
             obs[base + 2] = multiplier
-            if self.observation_mode == "rich":
+            if is_rich:
                 rich_base = BASE_SIMPLE_OBS_SIZE + i * RICH_FEATURES_PER_MOVE
                 expected_damage = bp * acc * multiplier * 0.25
                 obs[rich_base] = min(4.0, bp * acc * multiplier)
@@ -445,24 +643,33 @@ class SimplePokemonMoveEnv(gymnasium.Env):
                 obs[rich_base + 7] = 1.0 if role == ROLE_STATUS else 0.0
 
         # Advanced: add status + item + hazard + ability info at end of base obs, before bench
+        extra_base = BASE_RICH_OBS_SIZE if is_rich else BASE_SIMPLE_OBS_SIZE
         if is_advanced:
-            extra_base = (
-                BASE_RICH_OBS_SIZE if self.observation_mode == "rich" else BASE_SIMPLE_OBS_SIZE
-            )
             obs[extra_base] = own_status
             obs[extra_base + 1] = opponent_status
             obs[extra_base + 2] = own_item
             obs[extra_base + 3] = opponent_item
-            # Hazards: 6 floats
-            obs[extra_base + 4] = self.own_stealth_rock
-            obs[extra_base + 5] = self.opp_stealth_rock
-            obs[extra_base + 6] = self.own_spikes
-            obs[extra_base + 7] = self.opp_spikes
-            obs[extra_base + 8] = self.own_toxic_spikes
-            obs[extra_base + 9] = self.opp_toxic_spikes
+            # Hazards: 6 floats (own-set/opponent-set SR, Spikes, Toxic Spikes)
+            obs[extra_base + 4 : extra_base + 10] = hazards
             # Abilities: 2 floats
             obs[extra_base + 10] = own_ability
             obs[extra_base + 11] = opponent_ability
+            extra_base += ADVANCED_OBS_EXTRA
+
+        # rich_v2: types, attack boosts and speed (who moves first)
+        if self.observation_mode == "rich_v2":
+            type_count = len(POKEMON_TYPES)
+            for type_index, pokemon_type in enumerate(POKEMON_TYPES):
+                obs[extra_base + type_index] = 1.0 if pokemon_type in own_types else 0.0
+                obs[extra_base + type_count + type_index] = (
+                    1.0 if pokemon_type in opponent_types else 0.0
+                )
+            stats_base = extra_base + 2 * type_count
+            obs[stats_base] = own_attack_boost
+            obs[stats_base + 1] = opponent_attack_boost
+            obs[stats_base + 2] = own_speed
+            obs[stats_base + 3] = opponent_speed
+            obs[stats_base + 4] = 0.5 if own_speed == opponent_speed else float(own_speed > opponent_speed)
 
         # Bench info
         bench_base = base_size
@@ -489,9 +696,20 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             own_status=self.own_status,
             opponent_status=self.opponent_status,
             own_item=self.own_item,
-            opponent_item=self.opponent_item,
+            opponent_item=self._public_value(self.opponent_active, "item"),
             own_ability=self.own_ability,
-            opponent_ability=self.opponent_ability,
+            opponent_ability=self._public_value(self.opponent_active, "ability"),
+            hazards=(
+                self.own_stealth_rock, self.opp_stealth_rock,
+                self.own_spikes, self.opp_spikes,
+                self.own_toxic_spikes, self.opp_toxic_spikes,
+            ),
+            own_types=self.own_types,
+            opponent_types=self.opponent_types,
+            own_attack_boost=self.own_attack_boost,
+            opponent_attack_boost=self.opponent_attack_boost,
+            own_speed=self._effective_speed(is_own=True),
+            opponent_speed=self._effective_speed(is_own=False),
         )
 
     def get_opponent_observation(self):
@@ -504,9 +722,20 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             own_status=self.opponent_status,
             opponent_status=self.own_status,
             own_item=self.opponent_item,
-            opponent_item=self.own_item,
+            opponent_item=self._public_value(self.active_pokemon, "item"),
             own_ability=self.opponent_ability,
-            opponent_ability=self.own_ability,
+            opponent_ability=self._public_value(self.active_pokemon, "ability"),
+            hazards=(
+                self.opp_stealth_rock, self.own_stealth_rock,
+                self.opp_spikes, self.own_spikes,
+                self.opp_toxic_spikes, self.own_toxic_spikes,
+            ),
+            own_types=self.opponent_types,
+            opponent_types=self.own_types,
+            own_attack_boost=self.opponent_attack_boost,
+            opponent_attack_boost=self.own_attack_boost,
+            own_speed=self._effective_speed(is_own=False),
+            opponent_speed=self._effective_speed(is_own=True),
         )
 
     def _get_info(self):
@@ -518,6 +747,7 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             "opponent_types": self.opponent_types,
             "mechanics": self.mechanics,
             "observation_mode": self.observation_mode,
+            "env_version": ENV_VERSION,
             "bench_size": len(self.bench),
             "opponent_bench_size": len(self.opponent_bench),
         }
@@ -724,6 +954,8 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             self.opponent_bench = []
             self.moves = self._generate_moves()
             self.opponent_moves = self._generate_opponent_moves()
+            self.own_speed = float(self.rng.uniform(0.2, 1.0))
+            self.opponent_speed = float(self.rng.uniform(0.2, 1.0))
         else:
             own_type_sets = [self._sample_types() for _ in range(1 + self.max_bench_size)]
             opponent_type_sets = [self._sample_types() for _ in range(1 + self.max_bench_size)]
@@ -754,81 +986,7 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             bench = self.bench if is_own else self.opponent_bench
             bench_index = action - SWITCH_ACTION
             if bench_index < len(bench) and bench[bench_index]["hp"] > 0:
-                if is_own:
-                    replacement = bench[bench_index]
-                    if self.active_pokemon is not None:
-                        # On switch-out: Regenerator heals, Natural Cure cures
-                        outgoing = self.active_pokemon
-                        if is_advanced and outgoing.get("ability") == ABILITY_REGENERATOR:
-                            outgoing["hp"] = min(1.0, outgoing["hp"] + (1.0 / 3.0))
-                        if is_advanced and outgoing.get("ability") == ABILITY_NATURAL_CURE:
-                            outgoing["status"] = STATUS_NONE
-                        bench[bench_index] = outgoing
-                    self.active_pokemon = replacement
-                    # Choice Band lock resets on switch
-                    self.own_choice_locked = False
-                    self.own_choice_action = -1
-                else:
-                    replacement = bench[bench_index]
-                    if self.opponent_active is not None:
-                        outgoing = self.opponent_active
-                        if is_advanced and outgoing.get("ability") == ABILITY_REGENERATOR:
-                            outgoing["hp"] = min(1.0, outgoing["hp"] + (1.0 / 3.0))
-                        if is_advanced and outgoing.get("ability") == ABILITY_NATURAL_CURE:
-                            outgoing["status"] = STATUS_NONE
-                        bench[bench_index] = outgoing
-                    self.opponent_active = replacement
-                    self.opponent_choice_locked = False
-                    self.opponent_choice_action = -1
-                self._sync_active_aliases()
-
-                # On switch-in: apply hazard damage
-                if is_advanced:
-                    incoming_types = (self.own_types if is_own else self.opponent_types)
-                    incoming_hp = self.own_hp if is_own else self.opponent_hp
-
-                    # Stealth Rock: damage based on type effectiveness of Rock
-                    opp_sr = self.opp_stealth_rock if is_own else self.own_stealth_rock
-                    if opp_sr:
-                        rock_effectiveness = self._type_effectiveness("rock", incoming_types)
-                        sr_damage = incoming_hp * 0.125 * rock_effectiveness
-                        sr_damage = min(sr_damage, incoming_hp * 0.5)  # cap at 50%
-                        if is_own:
-                            self.own_hp = max(0.0, self.own_hp - sr_damage)
-                        else:
-                            self.opponent_hp = max(0.0, self.opponent_hp - sr_damage)
-
-                    # Spikes: fixed damage per layer
-                    opp_spikes = self.opp_spikes if is_own else self.own_spikes
-                    if opp_spikes:
-                        spike_dmg = {1: 0.125, 2: 0.167, 3: 0.25}[opp_spikes]
-                        if is_own:
-                            self.own_hp = max(0.0, self.own_hp - spike_dmg)
-                        else:
-                            self.opponent_hp = max(0.0, self.opponent_hp - spike_dmg)
-
-                    # Toxic Spikes: poison on switch
-                    opp_ts = self.opp_toxic_spikes if is_own else self.own_toxic_spikes
-                    if opp_ts:
-                        status_key = "status" if is_own else "status"
-                        current_status = self.own_status if is_own else self.opponent_status
-                        if current_status == STATUS_NONE:
-                            if is_own:
-                                self.own_status = STATUS_POISON
-                                self.active_pokemon["status"] = STATUS_POISON
-                            else:
-                                self.opponent_status = STATUS_POISON
-                                self.opponent_active["status"] = STATUS_POISON
-
-                    # Intimidate: lowers opponent's attack on switch-in
-                    incoming_ability = self.own_ability if is_own else self.opponent_ability
-                    if incoming_ability == ABILITY_INTIMIDATE:
-                        if is_own:
-                            self.opponent_attack_boost = max(0.4, self.opponent_attack_boost - 0.3)
-                        else:
-                            self.own_attack_boost = max(0.4, self.own_attack_boost - 0.3)
-
-                    self._sync_active_pokemon()
+                self._switch_to(bench, bench_index, is_own=is_own)
             return
 
         # --- Use a move ---
@@ -888,6 +1046,7 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             return
 
         # --- Apply move effects ---
+        # Accuracy only gates the hit above; damage is not scaled by it again.
         if is_own:
             if role == ROLE_RECOVER:
                 heal = 0.35
@@ -900,39 +1059,9 @@ class SimplePokemonMoveEnv(gymnasium.Env):
                 self.own_attack_boost = min(2.2, self.own_attack_boost + boost)
             elif role == ROLE_STATUS:
                 if is_advanced and status_type != STATUS_NONE:
-                    # Check if it's a hazard-setting move (status_type > 5)
-                    if status_type == HAZARD_STEALTH_ROCK:
-                        if is_own:
-                            self.own_stealth_rock = 1
-                        else:
-                            self.opp_stealth_rock = 1
-                    elif status_type == HAZARD_SPIKES:
-                        if is_own and self.own_spikes < 3:
-                            self.own_spikes += 1
-                        elif not is_own and self.opp_spikes < 3:
-                            self.opp_spikes += 1
-                    elif status_type == HAZARD_TOXIC_SPIKES:
-                        if is_own and self.own_toxic_spikes < 2:
-                            self.own_toxic_spikes += 1
-                        elif not is_own and self.opp_toxic_spikes < 2:
-                            self.opp_toxic_spikes += 1
-                    else:
-                        # Apply status to opponent (if they don't already have one)
-                        target_status = self.opponent_status if is_own else self.own_status
-                        target_active = self.opponent_active if is_own else self.active_pokemon
-                        if target_status == STATUS_NONE and target_active is not None:
-                            if is_own:
-                                self.opponent_status = status_type
-                                self.opponent_active["status"] = status_type
-                            else:
-                                self.own_status = status_type
-                                self.active_pokemon["status"] = status_type
-                            if status_type == STATUS_SLEEP:
-                                sleep_turns = int(self.rng.integers(1, 4))
-                                if is_own:
-                                    self.opponent_active["sleep_turns"] = sleep_turns
-                                else:
-                                    self.active_pokemon["sleep_turns"] = sleep_turns
+                    self._apply_status_move(status_type, is_own=True)
+                else:
+                    self.opponent_attack_boost = max(0.4, self.opponent_attack_boost - 0.45)
             else:
                 # Attack move
                 attack_boost = self.own_attack_boost
@@ -948,28 +1077,23 @@ class SimplePokemonMoveEnv(gymnasium.Env):
                     elif self.own_item == ITEM_CHOICE_BAND:
                         attack_boost *= 1.5
 
-                raw_damage = bp * acc * multiplier * attack_boost * 0.25
-                damage_dealt = raw_damage
+                damage_dealt = bp * multiplier * attack_boost * 0.25
 
                 # Focus Sash: survive at 1 HP from full
                 if is_advanced and self.opponent_item == ITEM_FOCUS_SASH and not self.opponent_sash_used:
                     if self.opponent_hp >= 0.99 and damage_dealt >= self.opponent_hp:
-                        # Survive at 1 HP
                         damage_dealt = self.opponent_hp - (1.0 / 100.0)  # Leave a sliver
+                        self.opponent_sash_used = True
+                        self._reveal(self.opponent_active, "item")
 
                 self.opponent_hp = max(0.0, self.opponent_hp - damage_dealt)
 
-                # Life Orb recoil
+                # Life Orb recoil: 1/10 of the attacker's max HP
                 if is_advanced and self.own_item == ITEM_LIFE_ORB and damage_dealt > 0:
-                    recoil = self.own_hp * 0.1
-                    self.own_hp = max(0.0, self.own_hp - recoil)
+                    self.own_hp = max(0.0, self.own_hp - 0.1)
+                    self._reveal(self.active_pokemon, "item")
 
-                # Mark Focus Sash as used
-                if is_advanced and self.opponent_item == ITEM_FOCUS_SASH and not self.opponent_sash_used:
-                    if damage_dealt > 0 and self.opponent_hp <= 0:
-                        # Sash triggered
-                        self.opponent_sash_used = True
-                        self.opponent_active["sash_used"] = True
+                self._maybe_freeze(moves[action], target_is_own=False)
 
             self._sync_active_pokemon()
             return
@@ -984,41 +1108,9 @@ class SimplePokemonMoveEnv(gymnasium.Env):
             self.opponent_attack_boost = min(2.2, self.opponent_attack_boost + 0.6)
         elif role == ROLE_STATUS:
             if is_advanced and status_type != STATUS_NONE:
-                if status_type == HAZARD_STEALTH_ROCK:
-                    if is_own:
-                        self.own_stealth_rock = 1
-                    else:
-                        self.opp_stealth_rock = 1
-                elif status_type == HAZARD_SPIKES:
-                    if is_own and self.own_spikes < 3:
-                        self.own_spikes += 1
-                    elif not is_own and self.opp_spikes < 3:
-                        self.opp_spikes += 1
-                elif status_type == HAZARD_TOXIC_SPIKES:
-                    if is_own and self.own_toxic_spikes < 2:
-                        self.own_toxic_spikes += 1
-                    elif not is_own and self.opp_toxic_spikes < 2:
-                        self.opp_toxic_spikes += 1
-                else:
-                    target_status = self.opponent_status if is_own else self.own_status
-                    target_active = self.opponent_active if is_own else self.active_pokemon
-                    if target_status == STATUS_NONE and target_active is not None:
-                        if is_own:
-                            self.opponent_status = status_type
-                            self.opponent_active["status"] = status_type
-                        else:
-                            self.own_status = status_type
-                            self.active_pokemon["status"] = status_type
-                        if status_type == STATUS_SLEEP:
-                            sleep_turns = int(self.rng.integers(1, 4))
-                            if is_own:
-                                self.opponent_active["sleep_turns"] = sleep_turns
-                            else:
-                                self.active_pokemon["sleep_turns"] = sleep_turns
+                self._apply_status_move(status_type, is_own=False)
             else:
                 self.own_attack_boost = max(0.4, self.own_attack_boost - 0.45)
-                if not is_own:
-                    self.opponent_attack_boost = max(0.4, self.opponent_attack_boost - 0.45)
         else:
             attack_boost = self.opponent_attack_boost
             if is_advanced and self.opponent_status == STATUS_BURN:
@@ -1029,26 +1121,67 @@ class SimplePokemonMoveEnv(gymnasium.Env):
                 elif self.opponent_item == ITEM_CHOICE_BAND:
                     attack_boost *= 1.5
 
-            raw_damage = bp * acc * multiplier * attack_boost * 0.25
-            damage_taken = raw_damage
+            damage_taken = bp * multiplier * attack_boost * 0.25
 
             # Focus Sash for the player's side
             if is_advanced and self.own_item == ITEM_FOCUS_SASH and not self.own_sash_used:
                 if self.own_hp >= 0.99 and damage_taken >= self.own_hp:
                     damage_taken = self.own_hp - (1.0 / 100.0)
+                    self.own_sash_used = True
+                    self._reveal(self.active_pokemon, "item")
 
             self.own_hp = max(0.0, self.own_hp - damage_taken)
 
-            if is_advanced and self.own_item == ITEM_LIFE_ORB and damage_taken > 0:
-                recoil = self.opponent_hp * 0.1
-                self.opponent_hp = max(0.0, self.opponent_hp - recoil)
+            # Life Orb recoil hits the attacker (the opponent)
+            if is_advanced and self.opponent_item == ITEM_LIFE_ORB and damage_taken > 0:
+                self.opponent_hp = max(0.0, self.opponent_hp - 0.1)
+                self._reveal(self.opponent_active, "item")
 
-            if is_advanced and self.own_item == ITEM_FOCUS_SASH and not self.own_sash_used:
-                if damage_taken > 0 and self.own_hp <= 0:
-                    self.own_sash_used = True
-                    self.active_pokemon["sash_used"] = True
+            self._maybe_freeze(moves[action], target_is_own=True)
 
         self._sync_active_pokemon()
+
+    def _apply_status_move(self, status_type: int, *, is_own: bool) -> None:
+        """Resolve an advanced-mode status move: set a hazard or inflict a status."""
+        if status_type == HAZARD_STEALTH_ROCK:
+            if is_own:
+                self.own_stealth_rock = 1
+            else:
+                self.opp_stealth_rock = 1
+        elif status_type == HAZARD_SPIKES:
+            if is_own and self.own_spikes < 3:
+                self.own_spikes += 1
+            elif not is_own and self.opp_spikes < 3:
+                self.opp_spikes += 1
+        elif status_type == HAZARD_TOXIC_SPIKES:
+            if is_own and self.own_toxic_spikes < 2:
+                self.own_toxic_spikes += 1
+            elif not is_own and self.opp_toxic_spikes < 2:
+                self.opp_toxic_spikes += 1
+        else:
+            self._inflict_status(status_type, target_is_own=not is_own)
+
+    def _inflict_status(self, status_type: int, *, target_is_own: bool) -> None:
+        """Give the target a major status if it doesn't already have one."""
+        target_status = self.own_status if target_is_own else self.opponent_status
+        target_active = self.active_pokemon if target_is_own else self.opponent_active
+        if target_status != STATUS_NONE or target_active is None:
+            return
+        if target_is_own:
+            self.own_status = status_type
+        else:
+            self.opponent_status = status_type
+        target_active["status"] = status_type
+        if status_type == STATUS_SLEEP:
+            target_active["sleep_turns"] = int(self.rng.integers(1, 4))
+
+    def _maybe_freeze(self, move: tuple, *, target_is_own: bool) -> None:
+        """Ice-type attacks have a 10% chance to freeze a surviving target (advanced only)."""
+        if self.mechanics != "advanced" or _move_type(move) != "ice":
+            return
+        target_hp = self.own_hp if target_is_own else self.opponent_hp
+        if target_hp > 0 and self.rng.random() < 0.1:
+            self._inflict_status(STATUS_FREEZE, target_is_own=target_is_own)
 
     # ------------------------------------------------------------------ #
     #  Status ticks (burn / poison damage, item healing)
@@ -1074,8 +1207,10 @@ class SimplePokemonMoveEnv(gymnasium.Env):
         # Leftovers: 1/16 max HP heal
         if self.own_item == ITEM_LEFTOVERS and self.own_hp > 0 and self.own_hp < 1.0:
             self.own_hp = min(1.0, self.own_hp + (1.0 / 16.0))
+            self._reveal(self.active_pokemon, "item")
         if self.opponent_item == ITEM_LEFTOVERS and self.opponent_hp > 0 and self.opponent_hp < 1.0:
             self.opponent_hp = min(1.0, self.opponent_hp + (1.0 / 16.0))
+            self._reveal(self.opponent_active, "item")
 
         self._sync_active_pokemon()
 
@@ -1087,50 +1222,36 @@ class SimplePokemonMoveEnv(gymnasium.Env):
         # Clamp action to valid range
         action = min(max(int(action), 0), self.action_space.n - 1)
 
-        prev_opp = self.opponent_hp
-        prev_own = self.own_hp
+        prev_opp = self._team_hp(is_own=False)
+        prev_own = self._team_hp(is_own=True)
 
-        self._apply_action(action, is_own=True)
-
-        # --- Opponent attack ---
-        if self.opponent_hp > 0:
-            opp_action = self._opponent_action()
-            self._apply_action(opp_action, is_own=False)
-
-        post_own_hp = self.own_hp
-        post_opp_hp = self.opponent_hp
+        # Both sides commit to an action before either resolves.
+        opp_action = self._opponent_action()
+        actions = {True: action, False: opp_action}
+        for is_own in self._turn_order(action, opp_action):
+            # A Pokemon knocked out earlier in the turn doesn't get to act.
+            if (self.own_hp if is_own else self.opponent_hp) <= 0:
+                continue
+            self._apply_action(actions[is_own], is_own=is_own)
 
         # --- Status ticks (burn/poison damage, leftovers heal) ---
         if self.mechanics == "advanced":
             self._apply_status_ticks()
-            post_own_hp = self.own_hp
-            post_opp_hp = self.opponent_hp
 
         self._auto_switch_fainted()
 
-        # --- Reward (pure hp-delta, no role shaping) ---
-        opp_delta = max(0.0, prev_opp - post_opp_hp)
-        own_delta = max(0.0, prev_own - post_own_hp)
+        # --- Reward (team hp-delta, so switches don't hide damage; no role shaping) ---
+        opp_delta = max(0.0, prev_opp - self._team_hp(is_own=False))
+        own_delta = max(0.0, prev_own - self._team_hp(is_own=True))
         reward = opp_delta - own_delta - 0.01
 
         # --- Terminal conditions ---
         terminated = False
-        opponent_lost = (
-            self.opponent_hp <= 0
-            if self.max_bench_size == 0
-            else not self._team_has_living_pokemon(
-                self.opponent_active, self.opponent_bench
-            )
-        )
-        own_lost = (
-            self.own_hp <= 0
-            if self.max_bench_size == 0
-            else not self._team_has_living_pokemon(self.active_pokemon, self.bench)
-        )
-        if opponent_lost:
+        result = self.battle_result()
+        if result == "win":
             reward += 1.0
             terminated = True
-        elif own_lost:
+        elif result == "loss":
             reward -= 1.0
             terminated = True
 
@@ -1138,8 +1259,13 @@ class SimplePokemonMoveEnv(gymnasium.Env):
         truncated = self.turn >= self.max_turns
         if truncated and not terminated:
             reward -= 0.75
+            result = "draw"
 
-        return self._get_obs(), reward, terminated, truncated, self._get_info()
+        info = self._get_info()
+        if result is not None:
+            info["result"] = result
+            info["is_success"] = result == "win"
+        return self._get_obs(), reward, terminated, truncated, info
 
     def render(self):
         status_str = ""

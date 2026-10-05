@@ -11,8 +11,15 @@ Showdown player in action. It opens the real Pokemon Showdown website, signs in
 with your account or a guest name, queues a Random Battle, and clicks moves in a
 visible browser so you can follow every decision.
 
-The live player can use a lightweight heuristic policy or a trained PPO move
-selector. It can also save WebM recordings, write local battle stats, and
+Decisions are made from the raw battle protocol the web client receives, not
+from scraped page text: ShowdownRL records the battle room's messages, rebuilds
+the battle with poke-env's own parser, and feeds the same features used in
+training (`showdownrl/battle_features.py`) to the policy. By default the policy is
+a search agent. It runs poke-engine MCTS over sampled guesses of the opponent's
+hidden sets and falls back to a MaskablePPO model trained on the real simulator,
+then to a damage-calc heuristic. It can pick any legal action: moves, voluntary
+switches, and Terastallization.
+It can also save WebM recordings, write local battle stats, and
 generate local reports for comparing runs over time. Credentials, battle logs,
 debug snapshots, recordings, and stats stay on your machine unless you choose to
 share them.
@@ -23,35 +30,30 @@ share them.
 
 ## Current AI Benchmark
 
-The default trained bench-simulator policy is
-`maskable_ppo_v11_conservative_3M.zip`. It trains MaskablePPO with a 7-action
-space: 4 move actions plus up to 3 bench-switch actions. The 106-feature rich
-observation includes active HP, per-move damage context, support-move flags, and
-bench Pokemon HP/type context.
+All numbers below come from the **real Pokemon Showdown simulator**: a local
+server running Gen 9 Random Battles, driven through poke-env. They are not from a
+simplified environment. Each row is 1,000 battles, and ranges are Wilson 95%
+confidence intervals. See [docs/real_simulator.md](docs/real_simulator.md) for
+the training pipeline.
 
-![Policy comparison chart](docs/assets/ai_policy_comparison.png)
+| Agent | vs poke-env SimpleHeuristics | vs ShowdownRL smart heuristic | vs Foul Play (100 ms search) |
+| --- | ---: | ---: | ---: |
+| Smart heuristic (`showdownrl/smart_heuristic.py`) | 61.9% (2,000 battles) | 50% (itself) | 2/50 |
+| BC from the smart heuristic (`bc_smart`) | 61.8% (58.7-64.8) | 49.8% (46.7-52.9) | - |
+| BC distilled from Foul Play (`bc_fp_r2`) | 71.3% (68.4-74.0) | 62.4% (59.4-65.3) | 3/40 (7.5%) |
+| **Search** (`--policy search`: poke-engine MCTS, 4 sampled opponent sets, `bc_fp_r2` fallback) | **91.7% (88.0-94.3)**, 300 battles | **85.0% (80.5-88.6)**, 300 battles | **29/58 (50.0%, 37.5-62.5)** |
 
-This chart and table are generated from the published benchmark data in
-[docs/benchmarks/current_evaluation.csv](docs/benchmarks/current_evaluation.csv).
-Each seed runs 1,000 simulator episodes against the `type_aware` opponent.
-The benchmark uses the bench simulator where both sides can switch between
-active and benched Pokemon.
+Search runs MCTS on [poke-engine](https://github.com/pmariglia/poke-engine)
+over several sampled guesses of the opponent's hidden sets, drawn from the
+Gen 9 Random Battle set data. The benchmark used 50 ms per sample against the
+heuristics and 100 ms per sample against Foul Play. At that budget it plays
+evenly with Foul Play, the strongest open-source Random Battle bot. Every
+plain-network policy we trained loses to Foul Play more than 90% of the time.
 
-| Scenario | Policy | Episodes | Record (W-D-L) | Win rate | Avg reward | Avg turns |
-| --- | --- | ---: | ---: | ---: | ---: | ---: |
-| Rich/type-aware seed 42 | Maskable PPO v11 | 1000 | 790-41-169 | 79.0% | +2.211 | 22.93 |
-| Rich/type-aware seed 42 | Type aware | 1000 | 752-26-222 | 75.2% | +1.905 | 22.10 |
-| Rich/type-aware seed 42 | Max damage | 1000 | 542-29-429 | 54.2% | +0.569 | 24.37 |
-| Rich/type-aware seed 42 | Random | 1000 | 319-137-544 | 31.9% | -1.822 | 31.64 |
-| Rich/type-aware seed 99 | Maskable PPO v11 | 1000 | 788-40-172 | 78.8% | +2.205 | 22.83 |
-| Rich/type-aware seed 99 | Type aware | 1000 | 753-25-222 | 75.3% | +1.900 | 22.00 |
-| Rich/type-aware seed 99 | Max damage | 1000 | 545-27-428 | 54.5% | +0.577 | 24.25 |
-| Rich/type-aware seed 99 | Random | 1000 | 323-155-522 | 32.3% | -1.806 | 31.99 |
-
-Records are shown as wins-draws-losses. See
-[docs/benchmarks/current_evaluation.csv](docs/benchmarks/current_evaluation.csv)
-and [docs/model_leaderboard.md](docs/model_leaderboard.md) for the side-by-side
-benchmark data.
+The models trained in the older simplified environment (`maskable_ppo_v11` and
+later) use a different observation. They cannot play real battles, and their
+simplified-env scores do not transfer. See
+[docs/model_leaderboard.md](docs/model_leaderboard.md) for that history.
 
 ## Install
 
@@ -132,14 +134,19 @@ showdownrl live --max-battles 3
 # Stop a long session after 30 minutes
 showdownrl live --max-battles 50 --max-time 30
 
-# Show move scores while the AI is choosing
+# Save a redacted state snapshot for every decision
 showdownrl live --debug-policy
 
-# Try the trained PPO move selector, falling back to the heuristic if needed
+# Default: MCTS search (needs the `search` extra: pip install -e ".[search]").
+# More samples / time per sample play stronger but slower.
+showdownrl live --policy search --search-samples 4 --search-time-ms 100
+
+# Use the newest real-simulator model in models/real/ without search, falling
+# back to the damage-calc heuristic if none loads
 showdownrl live --policy ppo
 
-# Use a specific PPO checkpoint
-showdownrl live --policy ppo --model-path models/maskable_ppo_v11_conservative_3M.zip
+# Use a specific MaskablePPO checkpoint trained on battle_features
+showdownrl live --policy ppo --model-path models/real/my_model.zip
 
 # Do not write local battle stats
 showdownrl live --no-stats

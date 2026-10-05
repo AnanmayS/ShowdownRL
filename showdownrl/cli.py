@@ -56,11 +56,24 @@ def build_parser() -> argparse.ArgumentParser:
     live.add_argument("--max-turns", type=int, default=200, help="Maximum AI action cycles before stopping.")
     live.add_argument("--max-battles", type=int, default=1, help="Number of battles to play before stopping.")
     live.add_argument("--max-time", type=float, help="Stop after this many minutes of live play.")
-    live.add_argument("--policy", choices=["heuristic", "ppo"], default="heuristic", help="Move-selection policy.")
-    live.add_argument("--model-path", type=Path, help="Path to a stable-baselines PPO model zip.")
+    live.add_argument(
+        "--policy",
+        choices=["heuristic", "ppo", "search"],
+        default="search",
+        help="heuristic: damage-calc heuristic; ppo: MaskablePPO model trained on battle_features; "
+        "search: poke-engine MCTS over sampled opponent sets with the PPO model as fallback "
+        "(each falls back to the next simpler policy if it cannot load).",
+    )
+    live.add_argument("--search-samples", type=int, default=4, help="Opponent-set samples per search decision.")
+    live.add_argument("--search-time-ms", type=int, default=100, help="MCTS time per sample in milliseconds.")
+    live.add_argument(
+        "--model-path",
+        type=Path,
+        help="MaskablePPO .zip trained on battle_features (default: newest models/real/*.zip).",
+    )
     live.add_argument("--no-stats", action="store_true", help="Do not write local battle stats for this run.")
     live.add_argument("--stats-dir", type=Path, help="Directory for local battle stats.")
-    live.add_argument("--debug-policy", action="store_true", help="Print move scores and save redacted turn snapshots.")
+    live.add_argument("--debug-policy", action="store_true", help="Save redacted per-decision state snapshots.")
     live.add_argument("--slow-mo-ms", type=int, default=250, help="Browser slow-motion delay in milliseconds.")
     live.add_argument("--click-delay", type=float, default=0.75, help="Pause after visible clicks.")
     live.add_argument("--viewport-width", type=int, default=1280)
@@ -90,6 +103,11 @@ def add_common_live_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--guest", action="store_true", help="Use guest mode for this run.")
     parser.add_argument("--site", help="Pokemon Showdown URL.")
     parser.add_argument("--login-only", action="store_true", help="Stop before queueing a battle.")
+    parser.add_argument(
+        "--headless",
+        action="store_true",
+        help="Run the browser without a window (for background ladder runs; use --record to review games).",
+    )
 
 
 def install_chromium() -> int:
@@ -158,10 +176,13 @@ def options_from_args(args: argparse.Namespace, *, check_ui_only: bool = False) 
         max_time_minutes=getattr(args, "max_time", None),
         policy=getattr(args, "policy", "heuristic"),
         model_path=getattr(args, "model_path", None),
+        search_samples=getattr(args, "search_samples", 4),
+        search_time_ms=getattr(args, "search_time_ms", 100),
         stats_enabled=not getattr(args, "no_stats", False),
         stats_dir=getattr(args, "stats_dir", None),
         debug_policy=getattr(args, "debug_policy", False),
-        slow_mo_ms=getattr(args, "slow_mo_ms", 250),
+        slow_mo_ms=0 if getattr(args, "headless", False) else getattr(args, "slow_mo_ms", 250),
+        headless=getattr(args, "headless", False),
         click_delay=getattr(args, "click_delay", 0.75),
         viewport_width=getattr(args, "viewport_width", 1280),
         viewport_height=getattr(args, "viewport_height", 800),

@@ -14,6 +14,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+from showdownrl.significance import two_proportion_z_test  # noqa: E402
+
 TRAIN = ROOT / "scripts" / "train_ppo.py"
 EVALUATE = ROOT / "scripts" / "evaluate_model.py"
 DEFAULT_EVAL_SEEDS = [42, 99]
@@ -57,6 +60,8 @@ class Aggregate:
     non_loss_rate_stderr: float
     average_reward_stderr: float
     recommendation: str
+    # One-sided two-proportion z-test p-value for "candidate win rate > baseline".
+    win_rate_p_value: float | None = None
 
 
 def positive_int(value: str) -> int:
@@ -165,13 +170,13 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--mechanics",
-        choices=["toy", "typed", "rich"],
+        choices=["toy", "typed", "rich", "advanced"],
         default="rich",
         help="Training and evaluation mechanics.",
     )
     parser.add_argument(
         "--observation-mode",
-        choices=["simple", "rich"],
+        choices=["simple", "rich", "rich_v2"],
         default="rich",
         help="Candidate training observation mode. Evaluation uses auto-detected model shape.",
     )
@@ -187,6 +192,12 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=0.70,
         help="Fraction of evaluation seeds where a candidate must beat the baseline on all gate metrics.",
+    )
+    parser.add_argument(
+        "--significance-level",
+        type=float,
+        default=0.05,
+        help="Max one-sided p-value (two-proportion z-test) for a candidate's win-rate gain over the baseline.",
     )
     parser.add_argument(
         "--tune-trials",
@@ -368,6 +379,7 @@ def aggregate_rows(
     baseline_policy: str,
     *,
     min_seed_pass_rate: float = 0.70,
+    significance_level: float = 0.05,
 ) -> list[Aggregate]:
     grouped: dict[str, list[dict[str, str]]] = {}
     for row in rows:
@@ -438,9 +450,13 @@ def aggregate_rows(
             > baseline_seed_metrics[seed]["average_reward"]
         )
         seed_pass_rate = seed_passes / len(comparable_seeds) if comparable_seeds else 0.0
+        # A higher point estimate isn't enough: the win-rate gain must be significant.
+        _, win_rate_p_value = two_proportion_z_test(
+            item.wins, item.episodes, baseline.wins, baseline.episodes
+        )
         recommendation = (
             "promote"
-            if item.win_rate > baseline.win_rate
+            if win_rate_p_value < significance_level
             and item.non_loss_rate > baseline.non_loss_rate
             and item.average_reward > baseline.average_reward
             and seed_pass_rate >= min_seed_pass_rate
@@ -464,6 +480,7 @@ def aggregate_rows(
                 non_loss_rate_stderr=item.non_loss_rate_stderr,
                 average_reward_stderr=item.average_reward_stderr,
                 recommendation=recommendation,
+                win_rate_p_value=win_rate_p_value,
             )
         )
     return sorted(ranked, key=lambda item: (item.recommendation != "baseline", -item.win_rate))
@@ -490,6 +507,7 @@ def write_summary_csv(aggregates: list[Aggregate], path: Path) -> None:
                 "win_rate_stderr",
                 "non_loss_rate_stderr",
                 "average_reward_stderr",
+                "win_rate_p_value",
                 "recommendation",
             ],
         )
@@ -512,6 +530,7 @@ def write_summary_csv(aggregates: list[Aggregate], path: Path) -> None:
                     "win_rate_stderr": f"{item.win_rate_stderr:.6f}",
                     "non_loss_rate_stderr": f"{item.non_loss_rate_stderr:.6f}",
                     "average_reward_stderr": f"{item.average_reward_stderr:.6f}",
+                    "win_rate_p_value": "" if item.win_rate_p_value is None else f"{item.win_rate_p_value:.6f}",
                     "recommendation": item.recommendation,
                 }
             )
@@ -570,8 +589,8 @@ def write_report(
             "",
             "## Results",
             "",
-            "| Policy | Episodes | Record (W-L-D) | Win rate | Non-loss | Avg reward | Seed pass | Recommendation |",
-            "| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+            "| Policy | Episodes | Record (W-L-D) | Win rate | Win-rate p | Non-loss | Avg reward | Seed pass | Recommendation |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
         ]
     )
     for item in sorted(aggregates, key=lambda entry: entry.win_rate, reverse=True):
@@ -583,6 +602,7 @@ def write_report(
                     str(item.episodes),
                     f"{item.wins}-{item.losses}-{item.draws}",
                     pct(item.win_rate),
+                    "-" if item.win_rate_p_value is None else f"{item.win_rate_p_value:.3g}",
                     pct(item.non_loss_rate),
                     signed(item.average_reward),
                     f"{item.seed_passes}/{item.seed_count} ({pct(item.seed_pass_rate)})",
@@ -621,13 +641,15 @@ def write_report(
         lines.append(
             "Promotion candidate(s): "
             + ", ".join(f"`{policy}`" for policy in promotable)
-            + ". These beat the current default on aggregate win rate, non-loss rate, average reward, "
+            + ". These beat the current default on aggregate win rate (one-sided two-proportion z-test, "
+            + f"p < {args.significance_level:g}), non-loss rate, average reward, "
             + f"and at least {pct(args.min_seed_pass_rate)} of comparable evaluation seeds."
         )
     else:
         lines.append(
-            "No candidate beat the current default on aggregate win rate, non-loss rate, "
-            f"average reward, and at least {pct(args.min_seed_pass_rate)} of comparable evaluation seeds."
+            "No candidate beat the current default on aggregate win rate (one-sided two-proportion z-test, "
+            f"p < {args.significance_level:g}), non-loss rate, average reward, and at least "
+            f"{pct(args.min_seed_pass_rate)} of comparable evaluation seeds."
         )
 
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -637,6 +659,8 @@ def main() -> int:
     args = parse_args()
     if not 0.0 <= args.min_seed_pass_rate <= 1.0:
         raise SystemExit("--min-seed-pass-rate must be between 0 and 1.")
+    if not 0.0 < args.significance_level < 1.0:
+        raise SystemExit("--significance-level must be between 0 and 1.")
     if args.tune_trials < 0:
         raise SystemExit("--tune-trials must be zero or greater.")
 
@@ -676,6 +700,7 @@ def main() -> int:
         policies,
         current_model.stem,
         min_seed_pass_rate=args.min_seed_pass_rate,
+        significance_level=args.significance_level,
     )
     summary_path = output_dir / "experiment_summary.csv"
     report_path = output_dir / "report.md"

@@ -1,34 +1,33 @@
 from __future__ import annotations
 
+import os
 import sys
+import tempfile
+import time
 import tomllib
 import unittest
 from pathlib import Path
+from unittest import mock
 
+import numpy as np
+from gymnasium import spaces
+
+from showdownrl import policy_bridge
+from showdownrl.battle_features import N_ACTIONS, OBS_SIZE
 from showdownrl.policy_bridge import (
     MASKABLE_MODEL_FILENAME,
     RICH_MODEL_FILENAME,
-    RICH_OBS_SIZE,
-    PPOMovePolicy,
-    TEAM_RICH_OBS_SIZE,
-    TYPE_CHART,
-    ranked_switches,
+    LivePolicy,
+    PolicyLoadError,
+    check_model_compatible,
     model_search_paths,
-    turn_state_to_observation,
-    turn_state_to_rich_observation,
-    turn_state_to_team_observation,
-    type_effectiveness,
 )
 
 
-class FakeModel:
-    def __init__(self, action: int | Exception):
-        self.action = action
-
-    def predict(self, observation, deterministic=True):  # noqa: ANN001
-        if isinstance(self.action, Exception):
-            raise self.action
-        return self.action, None
+class _Model:
+    def __init__(self, obs_size: int, n_actions: int):
+        self.observation_space = spaces.Box(-1.0, 1.0, (obs_size,), dtype=np.float32)
+        self.action_space = spaces.Discrete(n_actions)
 
 
 class PolicyBridgeTests(unittest.TestCase):
@@ -45,106 +44,66 @@ class PolicyBridgeTests(unittest.TestCase):
 
         self.assertIn(Path(sys.prefix) / "models" / RICH_MODEL_FILENAME, paths)
 
-    def test_turn_state_to_observation_projects_live_payload(self) -> None:
-        obs = turn_state_to_observation(
-            {
-                "active": {"hp_percent": 75},
-                "opponent": {"hp_percent": 20, "types": ["Water", "Flying"]},
-            },
-            [
-                {"name": "Thunderbolt", "type": "Electric", "text": "Power 90 Accuracy 100"},
-                {"name": "Recover", "type": "Normal", "category": "Status", "text": "Recover"},
-            ],
-        )
+    def test_compatible_model_accepted(self) -> None:
+        check_model_compatible(_Model(OBS_SIZE, N_ACTIONS))
 
-        self.assertEqual(len(obs), 14)
-        self.assertEqual(obs[0], 0.75)
-        self.assertEqual(obs[1], 0.2)
-        self.assertEqual(obs[2], 0.9)
-        self.assertEqual(obs[3], 1.0)
-        self.assertEqual(obs[4], 4.0)
-        self.assertEqual(obs[5], 0.0)
+    def test_legacy_observation_sizes_are_rejected_not_silently_used(self) -> None:
+        for obs_size in (14, 46, 106):
+            with self.assertRaisesRegex(PolicyLoadError, "OBS_SIZE"):
+                check_model_compatible(_Model(obs_size, 4))
 
-    def test_type_effectiveness_prefers_showdown_button_text(self) -> None:
-        self.assertEqual(type_effectiveness({"type": "Ground", "text": "Doesn't affect the target"}, {}), 0.0)
-        self.assertEqual(type_effectiveness({"type": "Fire", "text": "Super effective"}, {}), 2.0)
+    def test_wrong_action_space_rejected(self) -> None:
+        with self.assertRaisesRegex(PolicyLoadError, "actions"):
+            check_model_compatible(_Model(OBS_SIZE, 4))
 
-    def test_ranked_switches_prefers_healthy_type_resist(self) -> None:
-        choices = [
-            {"index": 0, "name": "Scizor", "hp_percent": 35, "status": "BRN", "types": ["Bug", "Steel"]},
-            {"index": 1, "name": "Gyarados", "hp_percent": 90, "status": "", "types": ["Water", "Flying"]},
-        ]
-        ranked = ranked_switches(choices, {"opponent": {"types": ["Fire"]}})
+    def test_missing_model_raises_load_error(self) -> None:
+        with self.assertRaises(PolicyLoadError):
+            LivePolicy(Path("/nonexistent/model.zip"))
 
-        self.assertEqual(ranked[0][0]["name"], "Gyarados")
-        self.assertGreater(ranked[0][1], ranked[1][1])
+    def test_no_real_model_raises_load_error(self) -> None:
+        with mock.patch.object(policy_bridge, "default_live_model_path", return_value=None):
+            with self.assertRaisesRegex(PolicyLoadError, "models/real"):
+                LivePolicy()
 
-    def test_ranked_switches_avoids_fainted_options(self) -> None:
-        ranked = ranked_switches(
-            [
-                {"index": 0, "name": "Fainted mon", "text": "Fainted mon 0%"},
-                {"index": 1, "name": "Backup", "hp_percent": 12},
-            ]
-        )
-
-        self.assertEqual(ranked[0][0]["name"], "Backup")
-
-    def test_rich_observation_adds_move_context(self) -> None:
-        obs = turn_state_to_rich_observation(
-            {
-                "active": {"hp_percent": 25, "types": ["Water"]},
-                "opponent": {"hp_percent": 20, "types": ["Fire"]},
-            },
-            [
-                {"name": "Surf", "type": "Water", "category": "Special", "text": "Power 90 Accuracy 100"},
-                {"name": "Recover", "type": "Normal", "category": "Status", "text": "Recover"},
-            ],
-        )
-
-        self.assertEqual(len(obs), RICH_OBS_SIZE)
-        self.assertEqual(obs[14 + 1], 1.0)  # STAB
-        self.assertEqual(obs[14 + 2], 1.0)  # super effective
-        self.assertEqual(obs[14 + 4], 1.0)  # expected damage can finish
-        self.assertEqual(obs[14 + 8 + 5], 1.0)  # recovery flag on second move
-
-    def test_team_observation_adds_switch_context(self) -> None:
-        obs = turn_state_to_team_observation(
-            {
-                "active": {"hp_percent": 90, "types": ["Water"]},
-                "opponent": {"hp_percent": 80, "types": ["Fire"]},
-                "switch_options": [
-                    {"name": "Gyarados", "hp_percent": 75, "types": ["Water", "Flying"]},
-                ],
-            },
-            [{"name": "Surf", "type": "Water", "text": "Power 90 Accuracy 100"}],
-        )
-
-        self.assertEqual(len(obs), TEAM_RICH_OBS_SIZE)
-        self.assertEqual(obs[RICH_OBS_SIZE], 0.75)
-        self.assertEqual(obs[RICH_OBS_SIZE + 1 + list(TYPE_CHART).index("water")], 1.0)
-
-    def test_ppo_policy_selects_predicted_available_move(self) -> None:
-        policy = PPOMovePolicy(model=FakeModel(1))
-        moves = [
-            {"index": 0, "name": "Tackle", "type": "Normal", "text": "Power 40"},
-            {"index": 1, "name": "Surf", "type": "Water", "text": "Power 90"},
-        ]
-
-        choice = policy.choose(moves, {"active": {"hp_percent": 100}, "opponent": {"hp_percent": 100}})
-
-        self.assertEqual(choice.source, "ppo")
-        self.assertEqual(choice.ranked[0][0]["name"], "Surf")
-
-    def test_ppo_policy_falls_back_on_unavailable_action(self) -> None:
-        policy = PPOMovePolicy(model=FakeModel(3))
-        moves = [{"index": 0, "name": "Surf", "type": "Water", "text": "Power 90"}]
-
-        choice = policy.choose(moves, {})
-
-        self.assertEqual(choice.source, "heuristic")
-        self.assertIn("unavailable action", choice.fallback_reason)
-        self.assertEqual(choice.ranked[0][0]["name"], "Surf")
+    def test_default_live_model_is_newest_real_zip(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            real = Path(tmp) / "models" / "real"
+            real.mkdir(parents=True)
+            old, new = real / "a.zip", real / "b.zip"
+            old.write_bytes(b"")
+            new.write_bytes(b"")
+            now = time.time()
+            os.utime(old, (now - 100, now - 100))
+            os.utime(new, (now, now))
+            with mock.patch.object(policy_bridge, "model_search_paths",
+                                   return_value=[Path(tmp) / "models" / "real"]):
+                self.assertEqual(policy_bridge.default_live_model_path(), new)
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_search_live_policy_returns_valid_order():
+    import pytest
+
+    search = pytest.importorskip("showdownrl.search")
+    if not search.ENGINE_AVAILABLE or not search.engine_is_gen9():
+        pytest.skip("poke-engine (gen9 build) not installed")
+    from pathlib import Path
+
+    from showdownrl.policy_bridge import SearchLivePolicy, order_is_valid
+    from tests.test_battle_features import REQUEST, Battle, logging
+
+    model = Path("models/real/bc_fp_r2.zip")
+    if not model.exists():
+        pytest.skip("no trained real-simulator model")
+    battle = Battle("battle-gen9randombattle-9", "tester", logging.getLogger("t"), gen=9)
+    battle.player_role = "p1"
+    battle.parse_request(REQUEST)
+    battle.parse_message(["", "switch", "p1a: Rhydon", "Rhydon, L85, M", "300/300"])
+    battle.parse_message(["", "switch", "p2a: Charizard", "Charizard, L84, M", "100/100"])
+    policy = SearchLivePolicy(model, n_samples=2, time_ms=30)
+    decision = policy.choose(battle)
+    assert decision.source == "search"
+    assert order_is_valid(decision.order, battle)

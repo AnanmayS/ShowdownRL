@@ -13,20 +13,28 @@ import json
 import math
 import random
 import re
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import torch
 from stable_baselines3 import PPO
-from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
+from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from showdownrl.simple_env import SimplePokemonMoveEnv
+from showdownrl.significance import wilson_interval
+from showdownrl.simple_env import (
+    DEFAULT_MAX_BENCH_SIZE,
+    ENV_VERSION,
+    SimplePokemonMoveEnv,
+    _obs_size_for_mechanics,
+)
 
 
 LEAGUE_STEP_RE = re.compile(r"^league_step_(\d+)\.zip$")
@@ -182,6 +190,138 @@ class SelfPlayCurriculumCallback(BaseCallback):
         return True
 
 
+def evaluate_win_rate(
+    model,
+    env,
+    n_episodes: int,
+    *,
+    deterministic: bool = True,
+    use_masks: bool = False,
+    seed: int | None = None,
+) -> dict[str, Any]:
+    """Play n_episodes on a VecEnv and return win/loss/draw counts with a Wilson 95% CI.
+
+    Outcomes come from the env's terminal info["result"]; episodes without one count as draws.
+    Recurrent state is threaded through predict() and reset at episode starts.
+    """
+    if seed is not None:
+        env.seed(seed)
+    obs = env.reset()
+    states = None
+    episode_starts = np.ones((env.num_envs,), dtype=bool)
+    current_rewards = np.zeros(env.num_envs)
+    counts = {"win": 0, "loss": 0, "draw": 0}
+    episode_rewards: list[float] = []
+    while len(episode_rewards) < n_episodes:
+        predict_kwargs: dict[str, Any] = {
+            "state": states,
+            "episode_start": episode_starts,
+            "deterministic": deterministic,
+        }
+        if use_masks:
+            predict_kwargs["action_masks"] = np.stack(env.env_method("action_masks"))
+        actions, states = model.predict(obs, **predict_kwargs)
+        obs, rewards, dones, infos = env.step(actions)
+        current_rewards += rewards
+        for index, done in enumerate(dones):
+            if not done:
+                continue
+            if len(episode_rewards) < n_episodes:
+                counts[infos[index].get("result", "draw")] += 1
+                episode_rewards.append(float(current_rewards[index]))
+            current_rewards[index] = 0.0
+        episode_starts = dones
+
+    ci_low, ci_high = wilson_interval(counts["win"], n_episodes)
+    return {
+        "episodes": n_episodes,
+        "wins": counts["win"],
+        "losses": counts["loss"],
+        "draws": counts["draw"],
+        "win_rate": counts["win"] / n_episodes,
+        "win_rate_ci_low": ci_low,
+        "win_rate_ci_high": ci_high,
+        "mean_reward": float(np.mean(episode_rewards)),
+    }
+
+
+class WinRateEvalCallback(BaseCallback):
+    """Periodically evaluate the policy and keep the checkpoint with the best win rate.
+
+    Unlike SB3's EvalCallback (best mean reward), checkpoints are ranked by win
+    rate with mean reward only as a tie-break, and every evaluation's Wilson
+    95% interval is logged and written to <best_model_save_path>/evaluations.json.
+    """
+
+    def __init__(
+        self,
+        eval_env,
+        *,
+        eval_freq: int,
+        n_eval_episodes: int,
+        best_model_save_path: Path | None,
+        use_masks: bool,
+        eval_seed: int | None = None,
+        deterministic: bool = True,
+        verbose: int = 1,
+    ):
+        super().__init__(verbose)
+        self.eval_env = eval_env
+        self.eval_freq = eval_freq
+        self.n_eval_episodes = n_eval_episodes
+        self.best_model_save_path = Path(best_model_save_path) if best_model_save_path else None
+        self.use_masks = use_masks
+        self.eval_seed = eval_seed
+        self.deterministic = deterministic
+        self.best_evaluation: dict[str, Any] | None = None
+        self.evaluations: list[dict[str, Any]] = []
+
+    def _on_step(self) -> bool:
+        if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
+            stats = evaluate_win_rate(
+                self.model,
+                self.eval_env,
+                self.n_eval_episodes,
+                deterministic=self.deterministic,
+                use_masks=self.use_masks,
+                seed=self.eval_seed,
+            )
+            self.record_evaluation(stats)
+        return True
+
+    def record_evaluation(self, stats: dict[str, Any]) -> bool:
+        """Log one evaluation; save the model if it has the best win rate so far."""
+        evaluation = {"timesteps": int(self.num_timesteps), **stats}
+        self.evaluations.append(evaluation)
+        for key in ("win_rate", "win_rate_ci_low", "win_rate_ci_high", "mean_reward"):
+            self.logger.record(f"eval/{key}", evaluation[key])
+
+        best = self.best_evaluation
+        is_best = best is None or (evaluation["win_rate"], evaluation["mean_reward"]) > (
+            best["win_rate"],
+            best["mean_reward"],
+        )
+        if is_best:
+            self.best_evaluation = evaluation
+        if self.best_model_save_path is not None:
+            self.best_model_save_path.mkdir(parents=True, exist_ok=True)
+            if is_best:
+                self.model.save(str(self.best_model_save_path / "best_model"))
+            (self.best_model_save_path / "evaluations.json").write_text(
+                json.dumps({"best": self.best_evaluation, "evaluations": self.evaluations}, indent=2) + "\n",
+                encoding="utf-8",
+            )
+        if self.verbose:
+            print(
+                f"Eval @ {evaluation['timesteps']}: win_rate={evaluation['win_rate']:.3f} "
+                f"[{evaluation['win_rate_ci_low']:.3f}, {evaluation['win_rate_ci_high']:.3f}] "
+                f"over {evaluation['episodes']} episodes"
+                + (" (new best)" if is_best else ""),
+                flush=True,
+            )
+        return is_best
+
+
 def load_league_model(model_path: Path | None):
     if model_path is None:
         return None
@@ -229,9 +369,9 @@ def parse_args():
     )
     parser.add_argument(
         "--observation-mode",
-        choices=["simple", "rich"],
+        choices=["simple", "rich", "rich_v2"],
         default="simple",
-        help="Observation vector used during training.",
+        help="Observation vector used during training (rich_v2 adds types, boosts and speed).",
     )
     parser.add_argument(
         "--output",
@@ -270,7 +410,7 @@ def parse_args():
     parser.add_argument("--activation-fn", choices=["relu", "tanh", "elu"], default="relu", help="Policy activation function.")
     parser.add_argument("--ortho-init", action=argparse.BooleanOptionalAction, default=False, help="Use orthogonal init.")
     parser.add_argument("--eval-frequency", type=non_negative_int, default=10_000, help="Evaluate every N timesteps; use 0 to disable.")
-    parser.add_argument("--eval-episodes", type=positive_int, default=20, help="Episodes per periodic evaluation.")
+    parser.add_argument("--eval-episodes", type=positive_int, default=200, help="Episodes per periodic evaluation (best checkpoint is picked by win rate).")
     parser.add_argument("--self-play", action="store_true", default=False, help="Train against sampled past league checkpoints.")
     parser.add_argument("--league-dir", type=Path, default=Path("models/league"), help="Directory for league checkpoints.")
     parser.add_argument("--league-update-freq", type=positive_int, default=50_000, help="Timesteps between league snapshots.")
@@ -338,37 +478,62 @@ def build_ppo_kwargs(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def resolve_algorithm(algorithm: str):
+    """Return (algorithm_class, uses_action_masks)."""
     if algorithm == "ppo":
-        return PPO, EvalCallback
+        return PPO, False
     if algorithm == "maskable_ppo":
         try:
             from sb3_contrib import MaskablePPO
-            from sb3_contrib.common.maskable.callbacks import MaskableEvalCallback
         except ImportError as exc:
             raise SystemExit(
                 "MaskablePPO requires sb3-contrib. Install RL dependencies with `pip install -e '.[rl]'`."
             ) from exc
-        return MaskablePPO, MaskableEvalCallback
+        return MaskablePPO, True
     if algorithm == "recurrent_maskable_ppo":
         try:
-            from sb3_contrib import RecurrentPPO
-            from showdownrl.recurrent_maskable import (
-                RecurrentMaskablePPO,
-                RecurrentMaskableActorCriticPolicy,
-            )
+            from showdownrl.recurrent_maskable import RecurrentMaskablePPO
         except ImportError as exc:
             raise SystemExit(
                 "RecurrentMaskablePPO requires sb3-contrib. "
                 "Install RL dependencies with `pip install -e '.[rl]'`."
             ) from exc
-        return RecurrentMaskablePPO, EvalCallback
+        return RecurrentMaskablePPO, True
     raise ValueError(f"Unknown algorithm: {algorithm}")
 
 
-def write_metadata(args: argparse.Namespace, save_path: Path, best_model_dir: Path | None) -> Path:
+def git_revision(root: Path) -> tuple[str, bool]:
+    """Return (HEAD sha, has uncommitted tracked changes); ("unknown", False) outside git."""
+    try:
+        sha = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=root, text=True, stderr=subprocess.DEVNULL
+        ).strip()
+        status = subprocess.check_output(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
+            cwd=root,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        return "unknown", False
+    return sha, bool(status.strip())
+
+
+def write_metadata(
+    args: argparse.Namespace,
+    save_path: Path,
+    best_model_dir: Path | None,
+    best_eval: dict[str, Any] | None = None,
+) -> Path:
     metadata_path = save_path.with_suffix(".metadata.json")
+    sha, dirty = git_revision(Path(__file__).resolve().parent.parent)
     metadata = {
         "created_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "git_sha": sha,
+        "git_dirty": dirty,
+        "env_version": ENV_VERSION,
+        "observation_size": _obs_size_for_mechanics(
+            args.mechanics, args.observation_mode, DEFAULT_MAX_BENCH_SIZE
+        ),
         "algorithm": args.algorithm,
         "model_path": str(save_path),
         "resume_from": str(args.resume_from or ""),
@@ -379,6 +544,9 @@ def write_metadata(args: argparse.Namespace, save_path: Path, best_model_dir: Pa
         "mechanics": args.mechanics,
         "observation_mode": args.observation_mode,
         "opponent_policy": args.opponent_policy,
+        "eval_frequency": args.eval_frequency,
+        "eval_episodes": args.eval_episodes,
+        "best_eval": best_eval,
         "ppo": {
             **build_ppo_kwargs(args),
             "policy_kwargs": {
@@ -420,7 +588,7 @@ def main():
         flush=True,
     )
 
-    algorithm_class, eval_callback_class = resolve_algorithm(args.algorithm)
+    algorithm_class, uses_action_masks = resolve_algorithm(args.algorithm)
     league_pool = None
     league_model_path = None
     if args.self_play:
@@ -446,18 +614,18 @@ def main():
 
     callbacks = []
     best_model_dir: Path | None = None
+    eval_callback: WinRateEvalCallback | None = None
     if args.eval_frequency:
         best_model_dir = save_path.parent / f"{save_path.stem}_best"
-        callbacks.append(
-            eval_callback_class(
-                eval_env,
-                best_model_save_path=str(best_model_dir),
-                log_path=str(root / "results" / "training_eval"),
-                eval_freq=max(1, args.eval_frequency // args.n_envs),
-                n_eval_episodes=args.eval_episodes,
-                deterministic=True,
-            )
+        eval_callback = WinRateEvalCallback(
+            eval_env,
+            eval_freq=max(1, args.eval_frequency // args.n_envs),
+            n_eval_episodes=args.eval_episodes,
+            best_model_save_path=best_model_dir,
+            use_masks=uses_action_masks,
+            eval_seed=args.seed + 10_000,
         )
+        callbacks.append(eval_callback)
     if league_pool is not None:
         callbacks.append(LeagueSnapshotCallback(league_pool, args.league_update_freq))
         callbacks.append(
@@ -477,7 +645,9 @@ def main():
     if league_pool is not None:
         league_path = league_pool.save(model, model.num_timesteps)
         print(f"League checkpoint saved to {league_path}")
-    metadata_path = write_metadata(args, save_path, best_model_dir)
+    metadata_path = write_metadata(
+        args, save_path, best_model_dir, eval_callback.best_evaluation if eval_callback else None
+    )
 
     print(f"Model saved to {save_path}")
     print(f"Training metadata saved to {metadata_path}")
